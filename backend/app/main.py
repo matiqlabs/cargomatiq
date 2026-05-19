@@ -22,8 +22,26 @@ log = logging.getLogger("recon")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
+def _run_migrations() -> None:
+    """Add new columns to existing tables without a full migration framework."""
+    from sqlalchemy import text
+    new_cols = [
+        ("uploaded_soas", "reviewed_rows", "TEXT"),
+        ("uploaded_soas", "review_status", "TEXT"),
+        ("uploaded_soas", "reviewed_at", "TEXT"),
+    ]
+    with engine.connect() as conn:
+        for table, col, col_type in new_cols:
+            try:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+                conn.commit()
+            except Exception:
+                pass  # Column already exists
+
+
 def create_app() -> FastAPI:
     Base.metadata.create_all(bind=engine)
+    _run_migrations()
     app = FastAPI(title=settings.app_name)
 
     app.add_middleware(

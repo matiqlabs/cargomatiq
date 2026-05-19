@@ -2,6 +2,7 @@
 import shutil
 import tempfile
 import uuid
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -18,9 +19,12 @@ from app.recon.runner import run_job
 from app.schemas import (
     ConfirmMappingIn,
     CreateJobIn,
+    ExtractionReviewOut,
+    ExtractionReviewRow,
     MappingSuggestOut,
     ReconJobBrief,
     ReconJobDetail,
+    SaveReviewIn,
 )
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -60,7 +64,7 @@ def _detect_header_row(path, sheet_name, max_scan: int = 5) -> int:
 
 
 @router.post("/msg-preview")
-async def preview_msg_file(file: UploadFile = File(...)):
+def preview_msg_file(file: UploadFile = File(...)):
     """Convert a .msg to rows and return as JSON — no job created, for user verification."""
     if not (file.filename or "").lower().endswith(".msg"):
         raise HTTPException(400, "File must be a .msg")
@@ -283,8 +287,12 @@ def confirm_mapping(job_id: int, body: ConfirmMappingIn, db: Session = Depends(g
     persisted = [{k: v for k, v in r.items() if k != "_raw"} for r in canonical]
 
     job.soa.canonical_rows = persisted
+    # Clear any previous review when mapping changes
+    job.soa.reviewed_rows = None
+    job.soa.review_status = None
+    job.soa.reviewed_at = None
     job.soa.mapping = {**mapping, "_sheet": chosen_sheet, "_header_row": header_row}
-    job.status = "mapping_confirmed"
+    job.status = "review_pending"
     db.commit()
 
     # Cache mapping by header signature
@@ -303,12 +311,6 @@ def confirm_mapping(job_id: int, body: ConfirmMappingIn, db: Session = Depends(g
             mapping={k: v for k, v in mapping.items() if k in ("invoice_no", "invoice_date", "amount")},
         ))
     db.commit()
-
-    # Run reconciliation
-    try:
-        run_job(db, job)
-    except Exception as e:
-        raise HTTPException(500, f"Reconciliation failed: {e}")
     db.refresh(job)
     return _job_to_detail(job)
 
@@ -320,6 +322,123 @@ def rerun(job_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "Job not found")
     if job.soa is None or not job.soa.canonical_rows:
         raise HTTPException(400, "Mapping not confirmed yet.")
-    run_job(db, job)
+    vendor_rows = _resolve_vendor_rows(job.soa)
+    run_job(db, job, vendor_rows=vendor_rows)
+    db.refresh(job)
+    return _job_to_detail(job)
+
+
+# ── Extraction review endpoints ────────────────────────────────────────────
+
+def _row_confidence(row: dict) -> str:
+    has_inv = bool(row.get("invoice_no"))
+    has_date = bool(row.get("invoice_date"))
+    has_amt = row.get("amount") is not None
+    if has_inv and has_date and has_amt:
+        return "High"
+    elif has_inv and has_amt:
+        return "Medium"
+    return "Low"
+
+
+def _canonical_to_review(canonical_rows: list) -> list[ExtractionReviewRow]:
+    return [
+        ExtractionReviewRow(
+            id=str(i),
+            invoice_no=row.get("invoice_no"),
+            invoice_date=row.get("invoice_date"),
+            amount=row.get("amount"),
+            currency="INR",
+            confidence=_row_confidence(row),
+            source="extracted",
+            ignored=False,
+            edited=False,
+        )
+        for i, row in enumerate(canonical_rows)
+    ]
+
+
+def _resolve_vendor_rows(soa: models.UploadedSOA) -> list[dict]:
+    """Return the rows that reconciliation should consume.
+
+    Uses reviewed_rows (excluding ignored) if saved, otherwise canonical_rows.
+    Maps to the minimal {invoice_no, invoice_date, amount} format the engine expects.
+    """
+    if soa.reviewed_rows:
+        return [
+            {
+                "invoice_no": r["invoice_no"],
+                "invoice_date": r.get("invoice_date"),
+                "amount": r["amount"],
+            }
+            for r in soa.reviewed_rows
+            if not r.get("ignored", False)
+            and r.get("invoice_no")
+            and r.get("amount") is not None
+        ]
+    return soa.canonical_rows or []
+
+
+@router.get("/{job_id}/extraction-review", response_model=ExtractionReviewOut)
+def get_extraction_review(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(models.ReconJob).get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    soa = job.soa
+    if soa is None:
+        raise HTTPException(400, "No SOA uploaded for this job.")
+    if soa.reviewed_rows is not None:
+        rows = [ExtractionReviewRow(**r) for r in soa.reviewed_rows]
+    elif soa.canonical_rows:
+        rows = _canonical_to_review(soa.canonical_rows)
+    else:
+        rows = []
+    return ExtractionReviewOut(
+        job_id=job.id,
+        vendor_name=job.vendor.organization,
+        soa_filename=soa.filename,
+        row_count=len(rows),
+        rows=rows,
+        review_status=soa.review_status,
+    )
+
+
+@router.put("/{job_id}/extraction-review")
+def save_extraction_review(job_id: int, body: SaveReviewIn, db: Session = Depends(get_db)):
+    job = db.query(models.ReconJob).get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.soa is None:
+        raise HTTPException(400, "No SOA uploaded for this job.")
+    job.soa.reviewed_rows = [r.model_dump() for r in body.rows]
+    job.soa.review_status = "saved"
+    job.soa.reviewed_at = datetime.utcnow()
+    db.commit()
+    return {"ok": True, "saved": len(body.rows)}
+
+
+@router.delete("/{job_id}", status_code=204)
+def delete_job(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(models.ReconJob).get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    db.delete(job)
+    db.commit()
+
+
+@router.post("/{job_id}/continue-reconciliation", response_model=ReconJobDetail)
+def continue_reconciliation(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(models.ReconJob).get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.soa is None or not job.soa.canonical_rows:
+        raise HTTPException(400, "Mapping not confirmed yet.")
+    vendor_rows = _resolve_vendor_rows(job.soa)
+    if not vendor_rows:
+        raise HTTPException(400, "No rows to reconcile (all rows may be ignored).")
+    try:
+        run_job(db, job, vendor_rows=vendor_rows)
+    except Exception as e:
+        raise HTTPException(500, f"Reconciliation failed: {e}")
     db.refresh(job)
     return _job_to_detail(job)

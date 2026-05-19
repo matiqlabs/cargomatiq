@@ -10,11 +10,19 @@ from app.recon.classifier import classify
 from app.recon.engine import reconcile
 
 
-def run_job(db: Session, job: models.ReconJob) -> models.ReconJob:
+def run_job(db: Session, job: models.ReconJob, vendor_rows=None) -> models.ReconJob:
+    """Run reconciliation for a job.
+
+    vendor_rows: optional override row list (e.g. reviewed/corrected rows).
+                 If None, falls back to soa.canonical_rows.
+    """
     vendor = job.vendor
     soa = job.soa
-    if soa is None or not soa.canonical_rows:
-        raise ValueError("Job has no canonical SOA rows; confirm mapping first.")
+
+    if vendor_rows is None:
+        if soa is None or not soa.canonical_rows:
+            raise ValueError("Job has no canonical SOA rows; confirm mapping first.")
+        vendor_rows = soa.canonical_rows
 
     logisys_lines = (
         db.query(models.LogisysLine)
@@ -30,7 +38,7 @@ def run_job(db: Session, job: models.ReconJob) -> models.ReconJob:
     )
 
     result = reconcile(
-        soa.canonical_rows,
+        vendor_rows,
         logisys_lines,
         today_iso=date.today().isoformat(),
         credit_days=vendor.credit_days or 0,

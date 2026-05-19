@@ -5,6 +5,34 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict
 
 
+class ExtractionReviewRow(BaseModel):
+    id: str
+    invoice_no: Optional[str] = None
+    invoice_date: Optional[str] = None
+    amount: Optional[float] = None
+    currency: str = "INR"
+    due_date: Optional[str] = None
+    reference: Optional[str] = None
+    description: Optional[str] = None
+    confidence: str = "Medium"
+    ignored: bool = False
+    source: str = "extracted"
+    edited: bool = False
+
+
+class ExtractionReviewOut(BaseModel):
+    job_id: int
+    vendor_name: str
+    soa_filename: Optional[str] = None
+    row_count: int
+    rows: list[ExtractionReviewRow]
+    review_status: Optional[str] = None
+
+
+class SaveReviewIn(BaseModel):
+    rows: list[ExtractionReviewRow]
+
+
 class VendorOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int

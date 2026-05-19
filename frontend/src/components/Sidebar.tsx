@@ -9,6 +9,7 @@ const NAV = [
   {
     href: "/",
     label: "Command Center",
+    exact: true,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" rx="1.2" /><rect x="14" y="3" width="7" height="7" rx="1.2" />
@@ -17,8 +18,39 @@ const NAV = [
     ),
   },
   {
+    href: "/jobs/new",
+    label: "New Reconciliation",
+    exact: true,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+      </svg>
+    ),
+  },
+  {
+    href: "/jobs",
+    label: "Recon Jobs",
+    exact: false,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
+      </svg>
+    ),
+  },
+  {
+    href: "/history",
+    label: "History",
+    exact: false,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="9" />
+      </svg>
+    ),
+  },
+  {
     href: "/master",
     label: "Partners",
+    exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
@@ -29,6 +61,7 @@ const NAV = [
   {
     href: "/snapshots",
     label: "Data Sources",
+    exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
@@ -37,17 +70,9 @@ const NAV = [
     ),
   },
   {
-    href: "/jobs/new",
-    label: "New Reconciliation",
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
-      </svg>
-    ),
-  },
-  {
     href: "/reports",
     label: "Reports",
+    exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
@@ -60,8 +85,9 @@ const NAV = [
 export default function Sidebar({ collapsed, onToggle }: Props) {
   const path = usePathname();
 
-  function isActive(href: string) {
-    if (href === "/") return path === "/";
+  function isActive(href: string, exact: boolean) {
+    if (exact) return path === href;
+    if (href === "/jobs") return path === "/jobs" || (path?.startsWith("/jobs/") && !path.startsWith("/jobs/new"));
     return path?.startsWith(href);
   }
 
@@ -108,7 +134,7 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
         )}
         <div className="space-y-0.5">
           {NAV.map((item) => {
-            const active = isActive(item.href);
+            const active = isActive(item.href, item.exact);
             return (
               <Link
                 key={item.href}

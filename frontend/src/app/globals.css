@@ -115,34 +115,7 @@ html, body {
     @apply text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400;
   }
 
-  /* ── Status Badges ───────────────────────────────────────────── */
-  .status-ok_to_pay {
-    @apply bg-teal-50 text-teal-700 border border-teal-200;
-  }
-  .status-not_due {
-    @apply bg-sky-50 text-sky-700 border border-sky-200;
-  }
-  .status-pending_in_bt {
-    @apply bg-amber-50 text-amber-700 border border-amber-200;
-  }
-  .status-to_be_booked {
-    @apply bg-cyan-50 text-cyan-700 border border-cyan-200;
-  }
-  .status-missing_in_vendor {
-    @apply bg-slate-100 text-slate-500 border border-slate-200;
-  }
-  .status-amount_dispute {
-    @apply bg-red-50 text-red-700 border border-red-200;
-  }
-  .status-paid {
-    @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
-  }
-  .status-reconciled {
-    @apply bg-teal-50 text-teal-700 border border-teal-200;
-  }
-  .status-mapping_pending {
-    @apply bg-violet-50 text-violet-700 border border-violet-200;
-  }
+  /* Status badge styles are handled via inline styles in StatusBadge.tsx */
 
   /* ── Table helpers ───────────────────────────────────────────── */
   .tbl-head th {

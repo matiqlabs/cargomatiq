@@ -41,9 +41,6 @@ export default function NewJobPage() {
   const [busy, setBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState("Creating...");
   const [err, setErr] = useState<string | null>(null);
-  const [jobPreview, setJobPreview] = useState<{ headers: string[]; rows: Record<string, unknown>[] } | null>(null);
-  const [pendingJobId, setPendingJobId] = useState<number | null>(null);
-  const jobPreviewRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     (async () => {
@@ -64,11 +61,6 @@ export default function NewJobPage() {
     if (msgPreview && msgPreviewRef.current)
       msgPreviewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [msgPreview]);
-
-  useEffect(() => {
-    if (jobPreview && jobPreviewRef.current)
-      jobPreviewRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [jobPreview]);
 
   const filtered = vendorQ
     ? vendors.filter((v) => v.organization.toLowerCase().includes(vendorQ.toLowerCase())).slice(0, 50)
@@ -106,9 +98,8 @@ export default function NewJobPage() {
       setBusyLabel("Converting .msg to Excel...");
       const fd = new FormData();
       fd.append("file", file);
-      const mapping = await api.postForm(`/api/jobs/${job.id}/soa`, fd);
-      setPendingJobId(job.id);
-      setJobPreview({ headers: mapping.headers ?? [], rows: mapping.preview ?? [] });
+      await api.postForm(`/api/jobs/${job.id}/soa`, fd);
+      router.push(`/jobs/${job.id}`);
     } catch (e: any) {
       setErr(e.message || String(e));
     } finally {
@@ -265,8 +256,6 @@ export default function NewJobPage() {
                       setFile(e.target.files?.[0] || null);
                       setMsgPreview(null);
                       setPreviewErr(null);
-                      setJobPreview(null);
-                      setPendingJobId(null);
                     }}
                   />
                 </label>
@@ -300,7 +289,7 @@ export default function NewJobPage() {
                   {err}
                 </div>
               )}
-              <button onClick={go} disabled={busy || jobPreview !== null} className="btn-primary w-full justify-center">
+              <button onClick={go} disabled={busy} className="btn-primary w-full justify-center">
                 {busy ? (
                   <>
                     <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
@@ -361,46 +350,6 @@ export default function NewJobPage() {
         </div>
       )}
 
-      {/* Job preview */}
-      {jobPreview && pendingJobId && (
-        <div ref={jobPreviewRef} className="card p-5 space-y-4">
-          <div>
-            <h2 className="font-semibold text-sm text-slate-900">Extracted from .msg — verify before continuing</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Showing first {jobPreview.rows.length} row{jobPreview.rows.length !== 1 ? "s" : ""} extracted from the email.
-              If the data looks correct, continue to confirm the column mapping.
-            </p>
-          </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200">
-            <table className="w-full text-xs border-collapse">
-              <thead>
-                <tr>
-                  {jobPreview.headers.map((h) => (
-                    <th key={h} className="text-left px-3 py-2.5 font-semibold whitespace-nowrap text-white" style={{ background: "#070B1A" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(jobPreview.rows ?? []).map((row, i) => (
-                  <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
-                    {jobPreview.headers.map((h) => (
-                      <td key={h} className="px-3 py-1.5 border-b border-slate-100 whitespace-nowrap">{String(row[h] ?? "")}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex gap-3">
-            <button onClick={() => router.push(`/jobs/${pendingJobId}`)} className="btn-primary">
-              Looks good — continue to mapping
-            </button>
-            <button onClick={() => { setJobPreview(null); setPendingJobId(null); }} className="btn-secondary">
-              Back
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

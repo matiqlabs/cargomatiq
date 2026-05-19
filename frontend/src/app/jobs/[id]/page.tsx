@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { api, money, type JobDetail, type MappingSuggest } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 
@@ -14,6 +14,7 @@ const FIELD_LABELS: Record<string, string> = {
 
 export default function JobPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [job, setJob] = useState<JobDetail | null>(null);
   const [suggest, setSuggest] = useState<MappingSuggest | null>(null);
   const [mapping, setMapping] = useState<Record<string, string | null>>({});
@@ -27,6 +28,13 @@ export default function JobPage() {
   }
 
   useEffect(() => { refresh(); }, [id]);
+
+  // Redirect to review page once mapping is confirmed
+  useEffect(() => {
+    if (job?.status === "review_pending") {
+      router.push(`/jobs/${id}/review-extraction`);
+    }
+  }, [job?.status]);
 
   useEffect(() => {
     if (!job) return;
@@ -194,7 +202,7 @@ export default function JobPage() {
           </div>
           <div className="mt-5 flex items-center gap-3">
             <button onClick={confirm} disabled={busy} className="btn-primary">
-              {busy ? "Running..." : "Confirm & Reconcile"}
+              {busy ? "Confirming..." : "Confirm Mapping →"}
             </button>
             <span className="text-xs text-slate-400">
               SOA: <span className="text-slate-600 font-medium">{job.soa_filename}</span>

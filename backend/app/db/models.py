@@ -121,6 +121,10 @@ class UploadedSOA(Base):
     raw_preview: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     mapping: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     canonical_rows: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    # Human-in-the-loop review fields
+    reviewed_rows: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    review_status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class ReconJob(Base):

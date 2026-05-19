@@ -27,8 +27,20 @@ export const api = {
       body: body ? JSON.stringify(body) : undefined,
       cache: "no-store",
     }).then(handle),
+  put: (path: string, body?: any) =>
+    fetch(`${BASE}${path}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    }).then(handle),
   postForm: (path: string, form: FormData) =>
     fetch(`${BASE}${path}`, { method: "POST", body: form, cache: "no-store" }).then(handle),
+  delete: (path: string) =>
+    fetch(`${BASE}${path}`, { method: "DELETE", cache: "no-store" }).then((res) => {
+      if (res.status === 204) return null;
+      return handle(res);
+    }),
   fileUrl: (path: string) => `${BASE}${path}`,
 };
 
@@ -61,6 +73,30 @@ export type JobDetail = {
   summary: Record<string, any> | null;
   vendor: Vendor; logisys_snapshot: Snapshot; bt_snapshot: Snapshot;
   results: ReconLine[]; mapping: Record<string, any> | null; soa_filename: string | null;
+};
+
+export type ExtractionReviewRow = {
+  id: string;
+  invoice_no: string | null;
+  invoice_date: string | null;
+  amount: number | null;
+  currency: string;
+  due_date: string | null;
+  reference: string | null;
+  description: string | null;
+  confidence: string;
+  ignored: boolean;
+  source: string;
+  edited: boolean;
+};
+
+export type ExtractionReviewData = {
+  job_id: number;
+  vendor_name: string;
+  soa_filename: string | null;
+  row_count: number;
+  rows: ExtractionReviewRow[];
+  review_status: string | null;
 };
 
 export function money(n: number | null | undefined) {
