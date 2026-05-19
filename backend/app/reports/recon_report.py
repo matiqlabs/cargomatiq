@@ -1,4 +1,4 @@
-"""Per-vendor recon report — mirrors the AP team's VENDOR SOA layout."""
+"""Per-partner reconciliation report with user-facing export labels."""
 from io import BytesIO
 
 from sqlalchemy.orm import Session
@@ -16,9 +16,9 @@ from app.reports.excel_export import (
 )
 
 COLUMNS = [
-    "Status", "Match", "Vendor Inv No", "Vendor Date", "Vendor Amount", "Vendor Age (days)",
-    "AJWW Inv No", "AJWW Txn No", "AJWW Date", "AJWW Amount", "Diff",
-    "BT Label", "BT Labels", "BT Note", "BT Link", "BT Owner",
+    "Status", "Match", "Statement Inv No", "Statement Date", "Statement Amount", "Statement Age (days)",
+    "Books Inv No", "Books Txn No", "Books Date", "Books Amount", "Diff",
+    "Queue Label", "Queue Labels", "Queue Note", "Queue Link", "Queue Owner",
 ]
 
 
@@ -31,22 +31,21 @@ STATUS_ORDER = [
 
 def build(db: Session, job: models.ReconJob) -> bytes:
     wb = new_workbook()
-    ws = wb.create_sheet("Recon")
+    ws = wb.create_sheet("Reconciliation Report")
 
-    # Top metadata block
     summary = job.summary or {}
     v = job.vendor
     meta_rows = [
-        ("Vendor", v.organization),
+        ("Partner", v.organization),
         ("Country", v.country or ""),
         ("Credit Term (days)", v.credit_days or 0),
         ("GL Group", v.gl_group or ""),
-        ("Logisys Snapshot", job.logisys_snapshot.filename if job.logisys_snapshot else ""),
-        ("BT Snapshot", job.bt_snapshot.filename if job.bt_snapshot else ""),
-        ("Vendor Total", summary.get("vendor_total", 0)),
-        ("AJWW Total", summary.get("ajww_total", 0)),
-        ("Reconstructed Total", summary.get("reconstructed_total", 0)),
-        ("Residual", summary.get("residual", 0)),
+        ("Books / TMS Snapshot", job.logisys_snapshot.filename if job.logisys_snapshot else ""),
+        ("Pending Queue Snapshot", job.bt_snapshot.filename if job.bt_snapshot else ""),
+        ("Statement Total", summary.get("vendor_total", 0)),
+        ("Books Total", summary.get("ajww_total", 0)),
+        ("Matched Total", summary.get("reconstructed_total", 0)),
+        ("Residual Gap", summary.get("residual", 0)),
         ("Closed", "YES" if summary.get("closed") else "NO"),
     ]
     for i, (k, val) in enumerate(meta_rows, 1):
@@ -55,7 +54,7 @@ def build(db: Session, job: models.ReconJob) -> bytes:
         kc.fill = SUBHEAD_FILL
         vc = ws.cell(row=i, column=2, value=val)
         vc.font = BOLD_BODY_FONT
-        if isinstance(val, (int, float)) and k in ("Vendor Total", "AJWW Total", "Reconstructed Total", "Residual"):
+        if isinstance(val, (int, float)) and k in ("Statement Total", "Books Total", "Matched Total", "Residual Gap"):
             vc.number_format = "#,##0.00"
     ws.column_dimensions["A"].width = 22
     ws.column_dimensions["B"].width = 40
@@ -64,7 +63,6 @@ def build(db: Session, job: models.ReconJob) -> bytes:
     widths = [16, 11, 16, 13, 14, 9, 16, 16, 13, 14, 10, 14, 22, 35, 28, 20]
     write_header_row(ws, header_row, COLUMNS, widths=widths)
 
-    # Body
     results = sorted(
         job.results,
         key=lambda r: (
@@ -95,7 +93,7 @@ def build(db: Session, job: models.ReconJob) -> bytes:
         for j, val in enumerate(vals, 1):
             cell = ws.cell(row=row, column=j)
             fmt = None
-            if j in (5, 10, 11):  # amount columns
+            if j in (5, 10, 11):
                 fmt = "#,##0.00"
             write_body_cell(cell, val, status=r.status, fmt=fmt)
         row += 1

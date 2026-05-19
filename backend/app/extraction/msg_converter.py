@@ -976,7 +976,7 @@ def write_rows_to_workbook(rows: list[CanonicalRow], output_path: Path) -> None:
 def build_workbook(rows: list[CanonicalRow]) -> Workbook:
     workbook = Workbook()
     sheet = workbook.active
-    sheet.title = "Vendor SOA"
+    sheet.title = "Vendor Statement"
 
     sheet.append(CANONICAL_HEADERS)
     for row in rows:

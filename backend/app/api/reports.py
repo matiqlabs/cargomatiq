@@ -1,4 +1,4 @@
-"""Report endpoints — each returns an .xlsx file."""
+"""Report endpoints - each returns an .xlsx file."""
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -42,7 +42,7 @@ def view_aging(db: Session = Depends(get_db)):
         meta = vendor_meta[vendor]
         buckets = grouped[vendor]
         rows.append({
-            "Vendor": vendor, "Country": meta["country"], "Currency": meta["currency"],
+            "Partner": vendor, "Country": meta["country"], "Currency": meta["currency"],
             "0-30": round(buckets["0-30"], 2), "31-60": round(buckets["31-60"], 2),
             "61-90": round(buckets["61-90"], 2), "90+": round(buckets["90+"], 2),
             "Total": round(sum(buckets.values()), 2),
@@ -63,12 +63,12 @@ def view_disputes(db: Session = Depends(get_db)):
     )
     rows = [
         {
-            "Vendor": vendor.organization, "Status": line.status,
+            "Partner": vendor.organization, "Status": line.status,
             "Invoice": line.vendor_inv_no or line.ajww_inv_no or "",
             "Amount": line.vendor_amount, "Diff": line.diff,
-            "BT Label": line.bt_label or "", "BT Labels": line.bt_labels or "",
-            "Note": line.bt_note or "", "Owner": line.bt_owner or "",
-            "Link": line.bt_link or "",
+            "Queue Label": line.bt_label or "", "Queue Labels": line.bt_labels or "",
+            "Follow-Up Note": line.bt_note or "", "Queue Owner": line.bt_owner or "",
+            "Queue Link": line.bt_link or "",
             "Age (days)": line.vendor_age_days if line.vendor_age_days is not None else "",
         }
         for line, _job, vendor in rows_q
@@ -89,10 +89,10 @@ def view_payment_packet(db: Session = Depends(get_db)):
     )
     rows = [
         {
-            "Vendor": vendor.organization, "Invoice": line.vendor_inv_no or "",
+            "Partner": vendor.organization, "Invoice": line.vendor_inv_no or "",
             "Invoice Date": line.vendor_date or "", "Amount": line.vendor_amount,
             "Age (days)": line.vendor_age_days if line.vendor_age_days is not None else "",
-            "Credit Term": vendor.credit_days or 0, "AJWW Txn No": line.ajww_txn_no or "",
+            "Credit Term": vendor.credit_days or 0, "Books Txn No": line.ajww_txn_no or "",
         }
         for line, vendor in rows_q
     ]

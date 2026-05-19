@@ -1,4 +1,4 @@
-"""Dispute log: lines in pending_in_bt or amount_dispute, with BT context."""
+"""Dispute log with queue-facing user labels."""
 from io import BytesIO
 
 from sqlalchemy.orm import Session
@@ -7,8 +7,8 @@ from app.db import models
 from app.reports.excel_export import autosize, new_workbook, write_body_cell, write_header_row
 
 COLUMNS = [
-    "Vendor", "Status", "Invoice", "Amount", "Diff", "BT Label", "BT Labels",
-    "Note", "Owner", "Link", "Age (days)",
+    "Partner", "Status", "Invoice", "Amount", "Diff", "Queue Label", "Queue Labels",
+    "Follow-Up Note", "Queue Owner", "Queue Link", "Age (days)",
 ]
 
 

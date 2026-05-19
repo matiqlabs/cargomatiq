@@ -14,7 +14,7 @@ from app.reports.excel_export import (
     write_header_row,
 )
 
-COLUMNS = ["Vendor", "Invoice", "Invoice Date", "Amount", "Age (days)", "Credit Term", "AJWW Txn No"]
+COLUMNS = ["Partner", "Invoice", "Invoice Date", "Amount", "Age (days)", "Credit Term", "Books Txn No"]
 
 
 def build(db: Session) -> bytes:
@@ -31,7 +31,6 @@ def build(db: Session) -> bytes:
         .all()
     )
 
-    # Group by vendor for subtotals
     by_vendor: dict = {}
     for line, vendor in rows:
         by_vendor.setdefault(vendor, []).append(line)
@@ -39,7 +38,6 @@ def build(db: Session) -> bytes:
     r = 2
     grand = 0.0
     for vendor in sorted(by_vendor, key=lambda v: v.organization):
-        # Vendor band
         c = ws.cell(row=r, column=1, value=vendor.organization)
         c.font = SUBHEAD_FONT
         c.fill = SUBHEAD_FILL
@@ -69,7 +67,7 @@ def build(db: Session) -> bytes:
         amt_cell = ws.cell(row=r, column=4, value=round(subtotal, 2))
         amt_cell.font = BOLD_BODY_FONT
         amt_cell.number_format = "#,##0.00"
-        r += 2  # blank row between vendors
+        r += 2
         grand += subtotal
 
     if by_vendor:
