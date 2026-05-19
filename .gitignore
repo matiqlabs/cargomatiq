@@ -1,9 +1,9 @@
+@"
+backend/.venv/
+backend/storage/
+frontend/node_modules/
+frontend/.next/
 __pycache__/
 *.pyc
-.next/
-node_modules/
-storage/
-recon.db
-*.egg-info/
-.DS_Store
 .env
+"@ | Out-File -Encoding utf8 .gitignore
