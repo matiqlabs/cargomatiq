@@ -10,7 +10,7 @@ class ExtractionReviewRow(BaseModel):
     invoice_no: Optional[str] = None
     invoice_date: Optional[str] = None
     amount: Optional[float] = None
-    currency: str = "INR"
+    currency: str = "USD"
     due_date: Optional[str] = None
     reference: Optional[str] = None
     description: Optional[str] = None
@@ -23,6 +23,7 @@ class ExtractionReviewRow(BaseModel):
 class ExtractionReviewOut(BaseModel):
     job_id: int
     vendor_name: str
+    vendor_credit_days: int = 0
     soa_filename: Optional[str] = None
     row_count: int
     rows: list[ExtractionReviewRow]
@@ -100,6 +101,7 @@ class ReconLineOut(BaseModel):
     vendor_inv_no: Optional[str] = None
     vendor_date: Optional[str] = None
     vendor_amount: Optional[float] = None
+    vendor_currency: Optional[str] = None
     vendor_age_days: Optional[int] = None
     ajww_inv_no: Optional[str] = None
     ajww_txn_no: Optional[str] = None

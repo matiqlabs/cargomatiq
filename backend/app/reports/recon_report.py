@@ -1,4 +1,4 @@
-"""Per-partner reconciliation report with user-facing export labels."""
+"""Per-vendor reconciliation report with user-facing export labels."""
 from io import BytesIO
 
 from sqlalchemy.orm import Session
@@ -16,7 +16,7 @@ from app.reports.excel_export import (
 )
 
 COLUMNS = [
-    "Status", "Match", "Statement Inv No", "Statement Date", "Statement Amount", "Statement Age (days)",
+    "Status", "Match", "Statement Inv No", "Statement Date", "Statement Amount", "Currency", "Statement Age (days)",
     "Books Inv No", "Books Txn No", "Books Date", "Books Amount", "Diff",
     "Queue Label", "Queue Labels", "Queue Note", "Queue Link", "Queue Owner",
 ]
@@ -29,6 +29,13 @@ STATUS_ORDER = [
 ]
 
 
+def _display_date(value):
+    if not value:
+        return ""
+    text = str(value)
+    return text[:10] if len(text) >= 10 and text[4:5] == "-" and text[7:8] == "-" else text
+
+
 def build(db: Session, job: models.ReconJob) -> bytes:
     wb = new_workbook()
     ws = wb.create_sheet("Reconciliation Report")
@@ -36,7 +43,7 @@ def build(db: Session, job: models.ReconJob) -> bytes:
     summary = job.summary or {}
     v = job.vendor
     meta_rows = [
-        ("Partner", v.organization),
+        ("Vendor", v.organization),
         ("Country", v.country or ""),
         ("Credit Term (days)", v.credit_days or 0),
         ("GL Group", v.gl_group or ""),
@@ -60,7 +67,7 @@ def build(db: Session, job: models.ReconJob) -> bytes:
     ws.column_dimensions["B"].width = 40
 
     header_row = len(meta_rows) + 2
-    widths = [16, 11, 16, 13, 14, 9, 16, 16, 13, 14, 10, 14, 22, 35, 28, 20]
+    widths = [16, 11, 16, 13, 14, 10, 9, 16, 16, 13, 14, 10, 14, 22, 35, 28, 20]
     write_header_row(ws, header_row, COLUMNS, widths=widths)
 
     results = sorted(
@@ -76,12 +83,13 @@ def build(db: Session, job: models.ReconJob) -> bytes:
             r.status,
             r.match_method or "",
             r.vendor_inv_no or "",
-            r.vendor_date or "",
+            _display_date(r.vendor_date),
             r.vendor_amount,
+            r.vendor_currency or "",
             r.vendor_age_days if r.vendor_age_days is not None else "",
             r.ajww_inv_no or "",
             r.ajww_txn_no or "",
-            r.ajww_date or "",
+            _display_date(r.ajww_date),
             r.ajww_amount,
             r.diff,
             r.bt_label or "",
@@ -93,7 +101,7 @@ def build(db: Session, job: models.ReconJob) -> bytes:
         for j, val in enumerate(vals, 1):
             cell = ws.cell(row=row, column=j)
             fmt = None
-            if j in (5, 10, 11):
+            if j in (5, 11, 12):
                 fmt = "#,##0.00"
             write_body_cell(cell, val, status=r.status, fmt=fmt)
         row += 1

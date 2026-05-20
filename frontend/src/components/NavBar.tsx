@@ -4,10 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  { href: "/", label: "Command Center" },
-  { href: "/master", label: "Partners" },
-  { href: "/snapshots", label: "Data Sources" },
+  { href: "/", label: "Dashboard" },
   { href: "/jobs/new", label: "New Reconciliation" },
+  { href: "/snapshots", label: "Data Sources" },
+  { href: "/jobs", label: "Recon Jobs" },
+  { href: "/master", label: "Vendors" },
+  { href: "/history", label: "History" },
   { href: "/reports", label: "Reports" },
 ];
 

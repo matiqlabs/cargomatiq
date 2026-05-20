@@ -2,7 +2,7 @@
 import shutil
 import tempfile
 import uuid
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
@@ -15,6 +15,7 @@ from app.extraction import extract_file, list_sheets
 from app.mapping.apply import apply_mapping
 from app.mapping.dictionary import ALIASES
 from app.mapping.resolver import header_signature, suggest_mapping
+from app.recon.currency import currency_from_country, infer_currency_from_value
 from app.recon.runner import run_job
 from app.schemas import (
     ConfirmMappingIn,
@@ -28,6 +29,15 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
+
+
+def _currency_for_canonical_row(row: dict, amount_header: str | None, vendor: models.Vendor) -> str:
+    raw = row.get("_raw") or {}
+    return (
+        infer_currency_from_value(raw.get(amount_header) if amount_header else None)
+        or infer_currency_from_value(row.get("amount"))
+        or currency_from_country(vendor.country)
+    )
 
 
 def _detect_header_row(path, sheet_name, max_scan: int = 5) -> int:
@@ -283,8 +293,13 @@ def confirm_mapping(job_id: int, body: ConfirmMappingIn, db: Session = Depends(g
         raise HTTPException(400, f"Failed to re-read SOA: {e}")
 
     canonical = apply_mapping(table, mapping)
-    # Strip _raw before persisting to keep JSON column compact
-    persisted = [{k: v for k, v in r.items() if k != "_raw"} for r in canonical]
+    amount_header = mapping.get("amount")
+    # Strip _raw before persisting to keep JSON column compact, but preserve inferred currency.
+    persisted = []
+    for row in canonical:
+        compact = {k: v for k, v in row.items() if k != "_raw"}
+        compact["currency"] = _currency_for_canonical_row(row, amount_header, job.vendor)
+        persisted.append(compact)
 
     job.soa.canonical_rows = persisted
     # Clear any previous review when mapping changes
@@ -341,14 +356,32 @@ def _row_confidence(row: dict) -> str:
     return "Low"
 
 
-def _canonical_to_review(canonical_rows: list) -> list[ExtractionReviewRow]:
+def _due_date_from_invoice(invoice_date, credit_days: int | None) -> str | None:
+    if not invoice_date:
+        return None
+    try:
+        if isinstance(invoice_date, datetime):
+            base = invoice_date.date()
+        elif isinstance(invoice_date, date):
+            base = invoice_date
+        else:
+            base = date.fromisoformat(str(invoice_date)[:10])
+    except (TypeError, ValueError):
+        return None
+    return (base + timedelta(days=int(credit_days or 0))).isoformat()
+
+
+def _canonical_to_review(canonical_rows: list, vendor: models.Vendor | None = None) -> list[ExtractionReviewRow]:
+    fallback_currency = currency_from_country(vendor.country if vendor else None)
+    credit_days = vendor.credit_days if vendor else 0
     return [
         ExtractionReviewRow(
             id=str(i),
             invoice_no=row.get("invoice_no"),
             invoice_date=row.get("invoice_date"),
             amount=row.get("amount"),
-            currency="INR",
+            currency=row.get("currency") or fallback_currency,
+            due_date=row.get("due_date") or _due_date_from_invoice(row.get("invoice_date"), credit_days),
             confidence=_row_confidence(row),
             source="extracted",
             ignored=False,
@@ -390,12 +423,13 @@ def get_extraction_review(job_id: int, db: Session = Depends(get_db)):
     if soa.reviewed_rows is not None:
         rows = [ExtractionReviewRow(**r) for r in soa.reviewed_rows]
     elif soa.canonical_rows:
-        rows = _canonical_to_review(soa.canonical_rows)
+        rows = _canonical_to_review(soa.canonical_rows, job.vendor)
     else:
         rows = []
     return ExtractionReviewOut(
         job_id=job.id,
         vendor_name=job.vendor.organization,
+        vendor_credit_days=job.vendor.credit_days or 0,
         soa_filename=soa.filename,
         row_count=len(rows),
         rows=rows,

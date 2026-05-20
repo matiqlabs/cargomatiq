@@ -19,7 +19,7 @@ export default function MasterPage() {
     const form = new FormData();
     form.append("file", file);
     const r = await api.postForm("/api/master/upload", form);
-    setStatus(`Partner master uploaded: ${r.inserted} new, ${r.updated} updated.`);
+    setStatus(`Vendor master uploaded: ${r.inserted} new, ${r.updated} updated.`);
     await load();
   }
 
@@ -37,7 +37,7 @@ export default function MasterPage() {
               Freight finance workspace
             </span>
           </div>
-          <h1 className="text-[28px] font-bold text-slate-900 tracking-[-0.02em]">Partner Directory</h1>
+          <h1 className="text-[28px] font-bold text-slate-900 tracking-[-0.02em]">Vendor Directory</h1>
           <p className="text-sm text-slate-500 mt-1 leading-relaxed">
             Manage vendors, credit terms, countries, and GL groups used during reconciliation.
           </p>
@@ -47,8 +47,8 @@ export default function MasterPage() {
       {/* Upload + stats */}
       <div className="grid md:grid-cols-2 gap-4 items-start">
         <UploadBox
-          label="Upload Partner Master"
-          hint="Upload the vendor/partner master with organization, country, credit days, and GL group."
+          label="Upload Vendor Master"
+          hint="Upload the vendor master with organization, country, credit days, and GL group."
           onUpload={upload}
         />
         <div className="card p-6 flex flex-col gap-3 relative overflow-hidden">
@@ -60,10 +60,10 @@ export default function MasterPage() {
           <div className="label">Directory summary</div>
           <div className="flex items-end gap-2">
             <span className="text-5xl font-bold text-slate-900 tabular-nums leading-none">{vendors.length}</span>
-            <span className="text-sm text-slate-500 mb-1">partners loaded</span>
+            <span className="text-sm text-slate-500 mb-1">vendors loaded</span>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed max-w-xs">
-            Upload an Excel partner master to populate or refresh this directory. Each row should include
+            Upload an Excel vendor master to populate or refresh this directory. Each row should include
             organization name, country, credit days, and GL group.
           </p>
         </div>
@@ -78,12 +78,12 @@ export default function MasterPage() {
         </div>
       )}
 
-      {/* Partner table */}
+      {/* Vendor table */}
       <div className="card overflow-hidden">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-1 h-4 rounded-full" style={{ background: "#22D3EE" }} />
-            <h2 className="text-[13px] font-semibold text-slate-800">All Partners</h2>
+            <h2 className="text-[13px] font-semibold text-slate-800">All Vendors</h2>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -93,7 +93,7 @@ export default function MasterPage() {
               <input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder="Search partners..."
+                placeholder="Search vendors..."
                 className="aurora-input pl-8 w-52"
               />
             </div>
@@ -129,9 +129,9 @@ export default function MasterPage() {
                       >
                         ⊙
                       </div>
-                      <div className="text-sm font-semibold text-slate-700">No partners yet</div>
+                      <div className="text-sm font-semibold text-slate-700">No vendors yet</div>
                       <div className="text-xs text-slate-400 mt-1">
-                        Upload the partner master Excel file above to seed the directory.
+                        Upload the vendor master Excel file above to seed the directory.
                       </div>
                     </div>
                   </td>

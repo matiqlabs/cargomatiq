@@ -55,6 +55,7 @@ def run_job(db: Session, job: models.ReconJob, vendor_rows=None) -> models.Recon
             vendor_inv_no=rl.vendor_inv_no,
             vendor_date=rl.vendor_date,
             vendor_amount=rl.vendor_amount,
+            vendor_currency=rl.vendor_currency,
             vendor_age_days=rl.vendor_age_days,
             ajww_inv_no=rl.ajww_inv_no,
             ajww_txn_no=rl.ajww_txn_no,

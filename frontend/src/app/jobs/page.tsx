@@ -10,6 +10,7 @@ export default function ReconJobsPage() {
   const [vendors, setVendors] = useState<Record<number, Vendor>>({});
   const [err, setErr] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; vendorName: string } | null>(null);
 
   async function load() {
     try {
@@ -29,12 +30,13 @@ export default function ReconJobsPage() {
 
   useEffect(() => { load(); }, []);
 
-  async function handleDelete(id: number, vendorName: string) {
-    if (!confirm(`Delete reconciliation job #${id} for "${vendorName}"? This cannot be undone.`)) return;
-    setDeletingId(id);
+  async function confirmDelete() {
+    if (!pendingDelete) return;
+    setDeletingId(pendingDelete.id);
     try {
-      await api.delete(`/api/jobs/${id}`);
-      setJobs((prev) => prev.filter((j) => j.id !== id));
+      await api.delete(`/api/jobs/${pendingDelete.id}`);
+      setJobs((prev) => prev.filter((j) => j.id !== pendingDelete.id));
+      setPendingDelete(null);
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -63,12 +65,6 @@ export default function ReconJobsPage() {
             All pending and in-progress reconciliation jobs. Open a job to continue where you left off.
           </p>
         </div>
-        <Link href="/jobs/new" className="btn-primary shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Reconciliation
-        </Link>
       </div>
 
       {err && (
@@ -106,9 +102,6 @@ export default function ReconJobsPage() {
             <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
               All reconciliations are complete. Start a new one or check History for past runs.
             </p>
-            <Link href="/jobs/new" className="mt-4 btn-primary text-xs px-4 py-2">
-              New Reconciliation
-            </Link>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -116,7 +109,7 @@ export default function ReconJobsPage() {
               <thead>
                 <tr className="tbl-head">
                   <th>#</th>
-                  <th>Partner</th>
+                  <th>Vendor</th>
                   <th>Status</th>
                   <th>Country</th>
                   <th>Credit Days</th>
@@ -158,7 +151,7 @@ export default function ReconJobsPage() {
                             Open →
                           </Link>
                           <button
-                            onClick={() => handleDelete(j.id, vendor?.organization || String(j.id))}
+                            onClick={() => setPendingDelete({ id: j.id, vendorName: vendor?.organization || String(j.id) })}
                             disabled={deletingId === j.id}
                             className="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-red-100 text-red-400 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-40"
                             title="Delete job"
@@ -185,6 +178,62 @@ export default function ReconJobsPage() {
           </div>
         )}
       </div>
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgba(15,23,42,0.38)", backdropFilter: "blur(6px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-job-title"
+        >
+          <div className="card w-full max-w-[430px] p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#DC2626" }}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <h2 id="delete-job-title" className="text-base font-bold text-slate-900">Delete reconciliation job?</h2>
+                <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                  This will delete job #{pendingDelete.id} for{" "}
+                  <span className="font-semibold text-slate-700">{pendingDelete.vendorName}</span>.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button onClick={() => setPendingDelete(null)} disabled={deletingId !== null} className="btn-secondary">
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deletingId !== null}
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                style={{ background: "#DC2626", color: "white" }}
+              >
+                {deletingId === pendingDelete.id ? (
+                  <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  </svg>
+                )}
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

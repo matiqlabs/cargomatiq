@@ -2,25 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api, money, type JobDetail, type MappingSuggest } from "@/lib/api";
+import { api, money, type JobDetail } from "@/lib/api";
 import StatusBadge from "@/components/StatusBadge";
 
 const CANONICAL = ["invoice_no", "invoice_date", "amount"] as const;
-const FIELD_LABELS: Record<string, string> = {
-  invoice_no: "Invoice Number",
-  invoice_date: "Invoice Date",
-  amount: "Amount",
-};
+
+function displayDate(value: string | null | undefined) {
+  if (!value) return "";
+  const match = String(value).match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : String(value);
+}
 
 export default function JobPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [job, setJob] = useState<JobDetail | null>(null);
-  const [suggest, setSuggest] = useState<MappingSuggest | null>(null);
-  const [mapping, setMapping] = useState<Record<string, string | null>>({});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>("all");
+  const [autoConfirming, setAutoConfirming] = useState(false);
+  const [autoConfirmAttempted, setAutoConfirmAttempted] = useState<number | null>(null);
 
   async function refresh() {
     const j = await api.get(`/api/jobs/${id}`);
@@ -37,29 +38,35 @@ export default function JobPage() {
   }, [job?.status]);
 
   useEffect(() => {
-    if (!job) return;
-    if (job.status === "mapping_pending" && job.mapping && job.mapping._suggested) {
-      const s = job.mapping._suggested;
-      const headers = Array.from(new Set(
-        Object.values(s).flatMap((f: any) => (f.candidates || []).map((c: any) => c.header))
-      )) as string[];
-      setSuggest({ headers, preview: [], suggested: s, cached: false });
-      const init: Record<string, string | null> = {};
-      for (const f of CANONICAL) init[f] = s[f]?.header || null;
-      setMapping(init);
+    if (!job || job.status !== "mapping_pending" || autoConfirming || autoConfirmAttempted === job.id) return;
+    const suggested = job.mapping?._suggested;
+    setAutoConfirmAttempted(job.id);
+    if (!suggested) {
+      setErr("Could not auto-detect the statement columns. Please upload a cleaner vendor statement.");
+      return;
     }
-  }, [job?.status]);
 
-  async function confirm() {
-    setBusy(true); setErr(null);
-    try {
-      const m: Record<string, string> = {};
-      for (const f of CANONICAL) if (mapping[f]) m[f] = mapping[f]!;
-      const j = await api.post(`/api/jobs/${id}/mapping/confirm`, { mapping: m });
-      setJob(j);
-    } catch (e: any) { setErr(e.message); }
-    finally { setBusy(false); }
-  }
+    const mapping: Record<string, string> = {};
+    for (const field of CANONICAL) {
+      const header = suggested[field]?.header;
+      if (header) mapping[field] = header;
+    }
+    if (Object.keys(mapping).length !== CANONICAL.length) {
+      setErr("Could not auto-detect invoice number, invoice date, and amount columns from this statement.");
+      return;
+    }
+
+    setAutoConfirming(true);
+    setBusy(true);
+    setErr(null);
+    api.post(`/api/jobs/${id}/mapping/confirm`, { mapping })
+      .then((j) => setJob(j))
+      .catch((e: any) => setErr(e.message))
+      .finally(() => {
+        setBusy(false);
+        setAutoConfirming(false);
+      });
+  }, [job, id, autoConfirming, autoConfirmAttempted]);
 
   async function rerun() {
     setBusy(true); setErr(null);
@@ -152,62 +159,9 @@ export default function JobPage() {
         </div>
       )}
 
-      {/* Mapping pending */}
-      {job.status === "mapping_pending" && suggest && (
-        <div className="card p-6">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full" style={{ background: "#F59E0B", boxShadow: "0 0 6px rgba(245,158,11,0.5)" }} />
-            <h2 className="font-bold text-slate-900">Confirm Column Mapping</h2>
-          </div>
-          <p className="text-sm text-slate-500 mb-5 leading-relaxed">
-            {suggest.cached ? "Loaded from cached mapping for this vendor format. " : ""}
-            Auto-detected columns from your vendor statement — override any that look wrong, then run reconciliation.
-          </p>
-          <div className="overflow-x-auto rounded-xl border border-slate-200/80">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="tbl-head">
-                  <th>Canonical Field</th><th>Suggested</th><th>Confidence</th><th>Override</th>
-                </tr>
-              </thead>
-              <tbody className="tbl-body">
-                {CANONICAL.map((f) => {
-                  const s = suggest.suggested[f];
-                  const candidates = s?.candidates || [];
-                  const headerOptions = Array.from(new Set([
-                    ...candidates.map((c) => c.header),
-                    ...suggest.headers,
-                  ])).filter(Boolean) as string[];
-                  return (
-                    <tr key={f}>
-                      <td className="font-semibold text-slate-800">{FIELD_LABELS[f]}</td>
-                      <td className="font-mono text-xs text-slate-500">{s?.header || <span className="text-slate-300">(none)</span>}</td>
-                      <td><Confidence score={s?.score ?? 0} /></td>
-                      <td>
-                        <select
-                          value={mapping[f] || ""}
-                          onChange={(e) => setMapping((prev) => ({ ...prev, [f]: e.target.value || null }))}
-                          className="aurora-select max-w-[260px]"
-                          style={{ paddingTop: "6px", paddingBottom: "6px" }}
-                        >
-                          <option value="">— pick column —</option>
-                          {headerOptions.map((h) => <option key={h} value={h}>{h}</option>)}
-                        </select>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-5 flex items-center gap-3">
-            <button onClick={confirm} disabled={busy} className="btn-primary">
-              {busy ? "Confirming..." : "Confirm Mapping →"}
-            </button>
-            <span className="text-xs text-slate-400">
-              SOA: <span className="text-slate-600 font-medium">{job.soa_filename}</span>
-            </span>
-          </div>
+      {job.status === "mapping_pending" && !err && (
+        <div className="card px-4 py-3 text-sm text-slate-500">
+          Reading statement columns and opening invoice review...
         </div>
       )}
 
@@ -265,12 +219,12 @@ export default function JobPage() {
                       <td><StatusBadge status={r.status} /></td>
                       <td className="text-xs text-slate-400 whitespace-nowrap">{r.match_method || ""}</td>
                       <td className="font-mono text-xs whitespace-nowrap">{r.vendor_inv_no || ""}</td>
-                      <td className="text-xs whitespace-nowrap">{r.vendor_date || ""}</td>
+                      <td className="text-xs whitespace-nowrap">{displayDate(r.vendor_date)}</td>
                       <td className="text-right tabular-nums whitespace-nowrap font-medium">{money(r.vendor_amount)}</td>
                       <td className="text-right tabular-nums">{r.vendor_age_days ?? ""}</td>
                       <td className="font-mono text-xs whitespace-nowrap">{r.ajww_inv_no || ""}</td>
                       <td className="font-mono text-xs whitespace-nowrap">{r.ajww_txn_no || ""}</td>
-                      <td className="text-xs whitespace-nowrap">{r.ajww_date || ""}</td>
+                      <td className="text-xs whitespace-nowrap">{displayDate(r.ajww_date)}</td>
                       <td className="text-right tabular-nums whitespace-nowrap font-medium">{money(r.ajww_amount)}</td>
                       <td className={`text-right tabular-nums whitespace-nowrap ${r.diff !== null && r.diff !== 0 ? "text-amber-600 font-semibold" : "text-slate-400"}`}>
                         {r.diff !== null && r.diff !== undefined ? money(r.diff) : ""}
@@ -320,21 +274,6 @@ function ReconStat({
       >
         {value}
       </div>
-    </div>
-  );
-}
-
-function Confidence({ score }: { score: number }) {
-  const color = score >= 90 ? "#2DD4BF" : score >= 70 ? "#F59E0B" : "#EF4444";
-  return (
-    <div className="flex items-center gap-2">
-      <div className="w-16 rounded-full h-1.5" style={{ background: "rgba(226,232,240,0.8)" }}>
-        <div
-          className="h-1.5 rounded-full transition-all duration-300"
-          style={{ width: `${Math.max(5, Math.min(100, score))}%`, background: color }}
-        />
-      </div>
-      <span className="text-xs tabular-nums" style={{ color: "#94A3B8" }}>{score}</span>
     </div>
   );
 }

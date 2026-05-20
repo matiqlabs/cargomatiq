@@ -1,9 +1,9 @@
-@"
 backend/.venv/
 backend/storage/
+backend/*.db
 frontend/node_modules/
 frontend/.next/
 __pycache__/
 *.pyc
 .env
-"@ | Out-File -Encoding utf8 .gitignore
+.DS_Store

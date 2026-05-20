@@ -16,7 +16,7 @@ type MsgPreviewResult = {
 const PREVIEW_COLS = ["INV Number", "INV Date", "Outstanding Amount"] as const;
 
 const STEPS = [
-  { n: 1, label: "Select Partner" },
+  { n: 1, label: "Select Vendor" },
   { n: 2, label: "Source Files" },
   { n: 3, label: "Vendor Statement" },
   { n: 4, label: "Create & Map" },
@@ -32,6 +32,8 @@ export default function NewJobPage() {
   const [logId, setLogId] = useState<number | null>(null);
   const [btId, setBtId] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [sourceBusy, setSourceBusy] = useState<"logisys" | "bt" | null>(null);
+  const [sourceErr, setSourceErr] = useState<string | null>(null);
 
   const [msgPreview, setMsgPreview] = useState<MsgPreviewResult | null>(null);
   const [previewBusy, setPreviewBusy] = useState(false);
@@ -56,6 +58,19 @@ export default function NewJobPage() {
       if (bs.length) setBtId(bs[0].id);
     })();
   }, []);
+
+  async function refreshSources(select?: { type: "logisys" | "bt"; id?: number }) {
+    const [ls, bs] = await Promise.all([
+      api.get("/api/snapshots/logisys"),
+      api.get("/api/snapshots/bt"),
+    ]);
+    setLogisys(ls);
+    setBt(bs);
+    if (select?.type === "logisys" && select.id) setLogId(select.id);
+    else if (!logId && ls.length) setLogId(ls[0].id);
+    if (select?.type === "bt" && select.id) setBtId(select.id);
+    else if (!btId && bs.length) setBtId(bs[0].id);
+  }
 
   useEffect(() => {
     if (msgPreview && msgPreviewRef.current)
@@ -83,9 +98,27 @@ export default function NewJobPage() {
     }
   }
 
+  async function uploadSource(type: "logisys" | "bt", sourceFile: File) {
+    setSourceBusy(type);
+    setSourceErr(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", sourceFile);
+      const snap = await api.postForm(
+        type === "logisys" ? "/api/snapshots/logisys" : "/api/snapshots/bt",
+        fd
+      );
+      await refreshSources({ type, id: snap.id });
+    } catch (e: any) {
+      setSourceErr(e.message || String(e));
+    } finally {
+      setSourceBusy(null);
+    }
+  }
+
   async function go() {
     if (!vendorId || !logId || !btId || !file) {
-      setErr("Pick a partner, both source snapshots, and the vendor statement file.");
+      setErr("Pick a vendor, both source snapshots, and the vendor statement file.");
       return;
     }
     setBusy(true);
@@ -95,11 +128,18 @@ export default function NewJobPage() {
       const job = await api.post("/api/jobs", {
         vendor_id: vendorId, logisys_snapshot_id: logId, bt_snapshot_id: btId,
       });
-      setBusyLabel("Converting .msg to Excel...");
+      setBusyLabel(file.name.toLowerCase().endsWith(".msg") ? "Converting .msg to Excel..." : "Reading vendor statement...");
       const fd = new FormData();
       fd.append("file", file);
-      await api.postForm(`/api/jobs/${job.id}/soa`, fd);
-      router.push(`/jobs/${job.id}`);
+      const mappingSuggestion = await api.postForm(`/api/jobs/${job.id}/soa`, fd);
+      const mapping: Record<string, string> = {};
+      for (const field of ["invoice_no", "invoice_date", "amount"]) {
+        const header = mappingSuggestion?.suggested?.[field]?.header;
+        if (header) mapping[field] = header;
+      }
+      setBusyLabel("Preparing extracted data for review...");
+      await api.post(`/api/jobs/${job.id}/mapping/confirm`, { mapping });
+      router.push(`/jobs/${job.id}/review-extraction`);
     } catch (e: any) {
       setErr(e.message || String(e));
     } finally {
@@ -126,7 +166,7 @@ export default function NewJobPage() {
           </div>
           <h1 className="text-[26px] font-bold text-slate-900 tracking-[-0.02em]">New Reconciliation</h1>
           <p className="text-sm text-slate-500 mt-1 leading-relaxed">
-            Select a partner, choose source files, and upload the vendor statement to detect matches and exceptions.
+            Select a vendor, choose source files, and upload the vendor statement to detect matches and exceptions.
           </p>
         </div>
       </div>
@@ -175,9 +215,9 @@ export default function NewJobPage() {
       {/* Two-column main layout */}
       <div className="grid grid-cols-[1fr_320px] gap-4 items-start">
 
-        {/* Left — Step 1: Partner selection */}
+        {/* Left — Step 1: Vendor selection */}
         <div className="card p-6 space-y-3">
-          <StepLabel n={1} done={!!vendorId} label="Select Partner" />
+          <StepLabel n={1} done={!!vendorId} label="Select Vendor" />
           <div className="relative">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ zIndex: 1 }}>
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -185,7 +225,7 @@ export default function NewJobPage() {
             <input
               value={vendorQ}
               onChange={(e) => setVendorQ(e.target.value)}
-              placeholder="Search partners..."
+              placeholder="Search vendors..."
               className="aurora-input"
               style={{ paddingLeft: "2.25rem" }}
             />
@@ -229,12 +269,27 @@ export default function NewJobPage() {
               onChange={setLogId}
               options={logisys.map((s) => ({ id: s.id, label: `${s.filename} (${s.row_count} rows)` }))}
             />
+            <InlineUpload
+              label="Upload new Books / TMS file"
+              busy={sourceBusy === "logisys"}
+              onUpload={(f) => uploadSource("logisys", f)}
+            />
             <StepSelect
               label="Pending Queue Snapshot"
               value={btId}
               onChange={setBtId}
               options={bt.map((s) => ({ id: s.id, label: `${s.filename} (${s.row_count} rows)` }))}
             />
+            <InlineUpload
+              label="Upload new Pending Queue file"
+              busy={sourceBusy === "bt"}
+              onUpload={(f) => uploadSource("bt", f)}
+            />
+            {sourceErr && (
+              <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                {sourceErr}
+              </div>
+            )}
           </div>
 
           {/* Step 3 + 4 — Upload & Create */}
@@ -247,10 +302,10 @@ export default function NewJobPage() {
                     <polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" />
                     <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
                   </svg>
-                  Choose .msg file
+                  Choose statement file
                   <input
                     type="file"
-                    accept=".msg"
+                    accept=".msg,.xlsx,.xlsm,.csv"
                     className="hidden"
                     onChange={(e) => {
                       setFile(e.target.files?.[0] || null);
@@ -259,7 +314,7 @@ export default function NewJobPage() {
                     }}
                   />
                 </label>
-                {file && (
+                {file && file.name.toLowerCase().endsWith(".msg") && (
                   <button onClick={previewMsg} disabled={previewBusy} className="btn-secondary">
                     {previewBusy ? "Extracting..." : "Preview"}
                   </button>
@@ -317,7 +372,7 @@ export default function NewJobPage() {
               <p className="text-xs text-slate-500 mt-0.5">
                 Source: <span className="font-medium">{msgPreview.source_type}</span>
                 {msgPreview.source_name ? ` · ${msgPreview.source_name}` : ""}
-                {msgPreview.vendor_hint ? ` · Partner hint: "${msgPreview.vendor_hint}"` : ""}
+                {msgPreview.vendor_hint ? ` · Vendor hint: "${msgPreview.vendor_hint}"` : ""}
               </p>
               {msgPreview.source_details && <p className="text-xs text-slate-400 mt-0.5">{msgPreview.source_details}</p>}
             </div>
@@ -390,5 +445,32 @@ function StepSelect({
         {options.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
       </select>
     </div>
+  );
+}
+
+function InlineUpload({
+  label, busy, onUpload,
+}: {
+  label: string; busy: boolean; onUpload: (file: File) => void;
+}) {
+  return (
+    <label className="inline-flex items-center gap-2 text-[11px] font-semibold text-cyan-700 cursor-pointer hover:text-cyan-800">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" />
+        <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+      </svg>
+      {busy ? "Uploading..." : label}
+      <input
+        type="file"
+        accept=".xlsx,.xlsm"
+        className="hidden"
+        disabled={busy}
+        onChange={(e) => {
+          const selected = e.target.files?.[0];
+          if (selected) onUpload(selected);
+          e.currentTarget.value = "";
+        }}
+      />
+    </label>
   );
 }

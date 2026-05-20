@@ -7,7 +7,7 @@ const REPORTS = [
   {
     key: "aging",
     name: "Aging Summary",
-    desc: "Per partner across all reconciled runs: 0-30, 31-60, 61-90, 90+ buckets.",
+    desc: "Per vendor across all reconciled runs: 0-30, 31-60, 61-90, 90+ buckets.",
     href: "/api/reports/aging.xlsx",
     jsonHref: "/api/reports/aging.json",
     accent: "#22D3EE",
@@ -39,7 +39,7 @@ const REPORTS = [
   {
     key: "payment",
     name: "Payment Release Packet",
-    desc: "OK to Pay lines grouped by partner, with subtotals.",
+    desc: "OK to Pay lines grouped by vendor, with subtotals.",
     href: "/api/reports/payment_packet.xlsx",
     jsonHref: "/api/reports/payment_packet.json",
     accent: "#2DD4BF",
@@ -152,7 +152,7 @@ export default function ReportsPage() {
         ))}
       </div>
 
-      {/* Per-partner note */}
+      {/* Per-vendor note */}
       <div className="card p-5 flex items-start gap-4">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -164,10 +164,10 @@ export default function ReportsPage() {
           </svg>
         </div>
         <div>
-          <div className="text-[13px] font-semibold text-slate-800">Per-partner reconciliation reports</div>
+          <div className="text-[13px] font-semibold text-slate-800">Per-vendor reconciliation reports</div>
           <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
             Open a specific reconciliation run from the{" "}
-            <a href="/" className="font-semibold" style={{ color: "#22D3EE" }}>Command Center</a>
+            <a href="/" className="font-semibold" style={{ color: "#22D3EE" }}>Dashboard</a>
             {" "}and click <span className="font-semibold text-slate-700">Download Report</span> in the page header.
           </p>
         </div>
@@ -187,7 +187,11 @@ export default function ReportsPage() {
               <h2 className="font-bold text-slate-900">{viewing.name}</h2>
               <p className="text-xs text-slate-400 mt-0.5">{viewing.data.rows.length} row{viewing.data.rows.length !== 1 ? "s" : ""}</p>
             </div>
-            <button onClick={() => setViewing(null)} className="text-sm text-slate-400 hover:text-slate-600 font-semibold">
+            <button
+              onClick={() => setViewing(null)}
+              className="text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors"
+              style={{ color: "#DC2626", background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)" }}
+            >
               ✕ Close
             </button>
           </div>

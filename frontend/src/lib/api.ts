@@ -62,7 +62,7 @@ export type MappingSuggest = {
 export type ReconLine = {
   id: number; status: string; match_method: string | null;
   vendor_inv_no: string | null; vendor_date: string | null;
-  vendor_amount: number | null; vendor_age_days: number | null;
+  vendor_amount: number | null; vendor_currency: string | null; vendor_age_days: number | null;
   ajww_inv_no: string | null; ajww_txn_no: string | null;
   ajww_date: string | null; ajww_amount: number | null; diff: number | null;
   bt_label: string | null; bt_labels: string | null;
@@ -93,6 +93,7 @@ export type ExtractionReviewRow = {
 export type ExtractionReviewData = {
   job_id: number;
   vendor_name: string;
+  vendor_credit_days: number;
   soa_filename: string | null;
   row_count: number;
   rows: ExtractionReviewRow[];

@@ -4,15 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const PAGE_TITLES: Record<string, string> = {
-  "/": "Command Center",
-  "/master": "Partners",
+  "/": "Dashboard",
+  "/master": "Vendors",
   "/snapshots": "Data Sources",
   "/jobs/new": "New Reconciliation",
+  "/jobs": "Recon Jobs",
+  "/history": "History",
   "/reports": "Finance Reports",
 };
 
 function getTitle(path: string): string {
-  if (path === "/") return "Command Center";
+  if (path === "/") return "Dashboard";
   if (path.startsWith("/jobs/new")) return "New Reconciliation";
   if (path.startsWith("/jobs/")) return "Reconciliation Run";
   if (PAGE_TITLES[path]) return PAGE_TITLES[path];
@@ -60,7 +62,7 @@ export default function TopBar({ collapsed: _collapsed }: { collapsed: boolean }
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
-          New Run
+          New Reconciliation
         </Link>
 
         {/* Avatar */}

@@ -7,7 +7,7 @@ from app.db import models
 from app.reports.excel_export import autosize, new_workbook, write_body_cell, write_header_row
 
 COLUMNS = [
-    "Partner", "Status", "Invoice", "Amount", "Diff", "Queue Label", "Queue Labels",
+    "Vendor", "Status", "Invoice", "Currency", "Amount", "Diff", "Queue Label", "Queue Labels",
     "Follow-Up Note", "Queue Owner", "Queue Link", "Age (days)",
 ]
 
@@ -15,7 +15,7 @@ COLUMNS = [
 def build(db: Session) -> bytes:
     wb = new_workbook()
     ws = wb.create_sheet("Disputes")
-    write_header_row(ws, 1, COLUMNS, widths=[28, 16, 14, 12, 10, 14, 22, 40, 22, 28, 10])
+    write_header_row(ws, 1, COLUMNS, widths=[28, 16, 14, 10, 12, 10, 14, 22, 40, 22, 28, 10])
 
     rows = (
         db.query(models.ReconLineResult, models.ReconJob, models.Vendor)
@@ -32,6 +32,7 @@ def build(db: Session) -> bytes:
             vendor.organization,
             line.status,
             line.vendor_inv_no or line.ajww_inv_no or "",
+            line.vendor_currency or "",
             line.vendor_amount,
             line.diff,
             line.bt_label or "",
@@ -42,7 +43,7 @@ def build(db: Session) -> bytes:
             line.vendor_age_days if line.vendor_age_days is not None else "",
         ]
         for j, val in enumerate(vals, 1):
-            fmt = "#,##0.00" if j in (4, 5) else None
+            fmt = "#,##0.00" if j in (5, 6) else None
             write_body_cell(ws.cell(row=r, column=j), val, status=line.status, fmt=fmt)
         r += 1
 

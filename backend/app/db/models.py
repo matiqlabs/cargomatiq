@@ -169,6 +169,7 @@ class ReconLineResult(Base):
     vendor_inv_no: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     vendor_date: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     vendor_amount: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    vendor_currency: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     vendor_age_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     ajww_inv_no: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     ajww_txn_no: Mapped[Optional[str]] = mapped_column(String, nullable=True)

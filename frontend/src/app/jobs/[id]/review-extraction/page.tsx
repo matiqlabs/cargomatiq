@@ -6,13 +6,23 @@ import { api, type ExtractionReviewRow, type ExtractionReviewData } from "@/lib/
 
 const CURRENCIES = ["INR", "USD", "EUR", "GBP", "AED", "SGD"];
 
-function makeRow(): ExtractionReviewRow {
+function addDaysIso(dateValue: string | null | undefined, days: number) {
+  if (!dateValue) return null;
+  const match = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function makeRow(currency = "USD"): ExtractionReviewRow {
   return {
     id: crypto.randomUUID(),
     invoice_no: null,
     invoice_date: null,
     amount: null,
-    currency: "INR",
+    currency,
     due_date: null,
     reference: null,
     description: null,
@@ -35,6 +45,7 @@ export default function ReviewExtractionPage() {
   const [err, setErr] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [valErrors, setValErrors] = useState<Record<string, string>>({});
+  const [pendingDelete, setPendingDelete] = useState<ExtractionReviewRow | null>(null);
 
   useEffect(() => {
     api.get(`/api/jobs/${id}/extraction-review`)
@@ -62,11 +73,14 @@ export default function ReviewExtractionPage() {
 
   function updateRow(rowId: string, field: keyof ExtractionReviewRow, value: any) {
     setRows(prev =>
-      prev.map(r =>
-        r.id === rowId
-          ? { ...r, [field]: value, edited: r.source === "extracted" ? true : r.edited }
-          : r
-      )
+      prev.map(r => {
+        if (r.id !== rowId) return r;
+        const next = { ...r, [field]: value, edited: r.source === "extracted" ? true : r.edited };
+        if (field === "invoice_date") {
+          next.due_date = addDaysIso(value, meta?.vendor_credit_days ?? 0);
+        }
+        return next;
+      })
     );
     setValErrors(prev => {
       const next = { ...prev };
@@ -77,17 +91,27 @@ export default function ReviewExtractionPage() {
   }
 
   function addRow() {
-    setRows(prev => [...prev, makeRow()]);
+    const defaultCurrency = rows.find(r => !r.ignored && r.currency)?.currency || "USD";
+    setRows(prev => [...prev, makeRow(defaultCurrency)]);
     setSaved(false);
   }
 
   function deleteRow(rowId: string) {
+    const row = rows.find(r => r.id === rowId);
+    if (!row) return;
+    setPendingDelete(row);
+  }
+
+  function confirmDeleteRow() {
+    if (!pendingDelete) return;
+    const rowId = pendingDelete.id;
     setRows(prev => prev.filter(r => r.id !== rowId));
     setValErrors(prev => {
       const next = { ...prev };
       Object.keys(next).filter(k => k.startsWith(rowId)).forEach(k => delete next[k]);
       return next;
     });
+    setPendingDelete(null);
     setSaved(false);
   }
 
@@ -178,8 +202,13 @@ export default function ReviewExtractionPage() {
       {meta && (
         <div className="card px-5 py-3.5 flex items-center gap-5 flex-wrap">
           <div>
-            <span className="label block mb-0.5">Partner</span>
+            <span className="label block mb-0.5">Vendor</span>
             <span className="text-sm font-semibold text-slate-800">{meta.vendor_name}</span>
+          </div>
+          <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
+          <div>
+            <span className="label block mb-0.5">Credit Period</span>
+            <span className="text-sm font-semibold text-slate-800">{meta.vendor_credit_days} days</span>
           </div>
           <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
           <div>
@@ -230,12 +259,6 @@ export default function ReviewExtractionPage() {
             <div className="w-1 h-4 rounded-full" style={{ background: "#22D3EE" }} />
             <h2 className="text-[13px] font-semibold text-slate-800">Extracted Invoice Rows</h2>
           </div>
-          <button onClick={addRow} className="btn-secondary">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Add Row
-          </button>
         </div>
 
         {rows.length === 0 ? (
@@ -262,8 +285,8 @@ export default function ReviewExtractionPage() {
                   <th style={{ minWidth: 110 }} className="text-right">Amount</th>
                   <th style={{ minWidth: 80 }}>Currency</th>
                   <th style={{ minWidth: 120 }}>Due Date</th>
-                  <th style={{ minWidth: 130 }}>Reference</th>
-                  <th style={{ minWidth: 95 }}>Confidence</th>
+                  <th style={{ minWidth: 130 }}>Comments</th>
+                  <th style={{ minWidth: 95 }}>Status</th>
                   <th style={{ minWidth: 120 }} className="text-right">Actions</th>
                 </tr>
               </thead>
@@ -313,6 +336,56 @@ export default function ReviewExtractionPage() {
           </button>
         </div>
       </div>
+
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgba(15,23,42,0.38)", backdropFilter: "blur(6px)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-invoice-title"
+        >
+          <div className="card w-full max-w-[420px] p-5 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#DC2626" }}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <h2 id="delete-invoice-title" className="text-base font-bold text-slate-900">Delete invoice?</h2>
+                <p className="text-sm text-slate-500 mt-1 leading-relaxed">
+                  This will remove {pendingDelete.invoice_no ? (
+                    <span className="font-semibold text-slate-700">invoice {pendingDelete.invoice_no}</span>
+                  ) : "this invoice"} from the review list.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button onClick={() => setPendingDelete(null)} className="btn-secondary">
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteRow}
+                className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold transition-colors"
+                style={{ background: "#DC2626", color: "white" }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                </svg>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -399,7 +472,7 @@ function ReviewRow({
           style={{ paddingTop: 5, paddingBottom: 5 }}
         />
       </td>
-      {/* Reference */}
+      {/* Comments */}
       <td className={base + dim}>
         <input
           value={row.reference ?? ""}
@@ -410,17 +483,14 @@ function ReviewRow({
           style={{ paddingTop: 5, paddingBottom: 5 }}
         />
       </td>
-      {/* Confidence */}
+      {/* Status */}
       <td className={`${base} whitespace-nowrap` + dim}>
         <div className="flex flex-col gap-1 items-start">
-          <ConfidenceBadge confidence={row.confidence} />
+          <InvoiceStatusBadge source={row.source} />
           {ignored && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-slate-100 text-slate-500 border-slate-200">
               Ignored
             </span>
-          )}
-          {!ignored && row.source === "manual" && (
-            <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">manual</span>
           )}
           {!ignored && row.edited && row.source === "extracted" && (
             <span className="text-[9px] font-semibold text-amber-500 uppercase tracking-wide">edited</span>
@@ -443,10 +513,17 @@ function ReviewRow({
           </button>
           <button
             onClick={() => onDelete(row.id)}
-            className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg transition-colors"
             style={{ background: "rgba(239,68,68,0.06)", color: "#DC2626", border: "1px solid rgba(239,68,68,0.2)" }}
+            title="Delete invoice"
+            aria-label="Delete invoice"
           >
-            ✕
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+            </svg>
           </button>
         </div>
       </td>
@@ -454,16 +531,15 @@ function ReviewRow({
   );
 }
 
-function ConfidenceBadge({ confidence }: { confidence: string }) {
+function InvoiceStatusBadge({ source }: { source: string }) {
   const map: Record<string, string> = {
-    High: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Medium: "bg-sky-50 text-sky-700 border-sky-200",
-    Low: "bg-amber-50 text-amber-700 border-amber-200",
-    Manual: "bg-slate-100 text-slate-700 border-slate-200",
+    extracted: "bg-sky-50 text-sky-700 border-sky-200",
+    manual: "bg-slate-100 text-slate-700 border-slate-200",
   };
+  const label = source === "manual" ? "Manual" : "Auto";
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${map[confidence] ?? map.Manual}`}>
-      {confidence}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${map[source] ?? map.extracted}`}>
+      {label}
     </span>
   );
 }

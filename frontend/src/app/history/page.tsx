@@ -55,12 +55,6 @@ export default function HistoryPage() {
             All completed reconciliation runs. Download the Excel report for any run.
           </p>
         </div>
-        <Link href="/jobs/new" className="btn-primary shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Reconciliation
-        </Link>
       </div>
 
       {err && (
@@ -121,11 +115,6 @@ export default function HistoryPage() {
                 ? "Complete a reconciliation to see it here."
                 : "Try switching the filter above."}
             </p>
-            {jobs.length === 0 && (
-              <Link href="/jobs/new" className="mt-4 btn-primary text-xs px-4 py-2">
-                Start Reconciliation
-              </Link>
-            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -133,7 +122,7 @@ export default function HistoryPage() {
               <thead>
                 <tr className="tbl-head">
                   <th>#</th>
-                  <th>Partner</th>
+                  <th>Vendor</th>
                   <th>Run Date</th>
                   <th className="text-right">Stmt Total</th>
                   <th className="text-right">Books Total</th>

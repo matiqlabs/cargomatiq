@@ -23,31 +23,8 @@ def _xlsx(data: bytes, filename: str) -> Response:
 
 @router.get("/aging.json")
 def view_aging(db: Session = Depends(get_db)):
-    from app.reports.aging import _bucket, BUCKETS, COLUMNS
-    jobs = db.query(models.ReconJob).filter(models.ReconJob.status == "reconciled").all()
-    grouped: dict = {}
-    vendor_meta: dict = {}
-    for job in jobs:
-        v = job.vendor
-        vendor_meta[v.organization] = {"country": v.country or "", "currency": "USD"}
-        for r in job.results:
-            if r.status not in ("ok_to_pay", "not_due", "pending_in_bt", "amount_dispute"):
-                continue
-            amt = r.vendor_amount or 0.0
-            b = _bucket(r.vendor_age_days)
-            grouped.setdefault(v.organization, {x: 0.0 for x in BUCKETS})
-            grouped[v.organization][b] += amt
-    rows = []
-    for vendor in sorted(grouped):
-        meta = vendor_meta[vendor]
-        buckets = grouped[vendor]
-        rows.append({
-            "Partner": vendor, "Country": meta["country"], "Currency": meta["currency"],
-            "0-30": round(buckets["0-30"], 2), "31-60": round(buckets["31-60"], 2),
-            "61-90": round(buckets["61-90"], 2), "90+": round(buckets["90+"], 2),
-            "Total": round(sum(buckets.values()), 2),
-        })
-    return {"columns": COLUMNS, "rows": rows}
+    from app.reports.aging import COLUMNS, build_rows
+    return {"columns": COLUMNS, "rows": build_rows(db)}
 
 
 @router.get("/disputes.json")
@@ -63,9 +40,9 @@ def view_disputes(db: Session = Depends(get_db)):
     )
     rows = [
         {
-            "Partner": vendor.organization, "Status": line.status,
+            "Vendor": vendor.organization, "Status": line.status,
             "Invoice": line.vendor_inv_no or line.ajww_inv_no or "",
-            "Amount": line.vendor_amount, "Diff": line.diff,
+            "Currency": line.vendor_currency or "", "Amount": line.vendor_amount, "Diff": line.diff,
             "Queue Label": line.bt_label or "", "Queue Labels": line.bt_labels or "",
             "Follow-Up Note": line.bt_note or "", "Queue Owner": line.bt_owner or "",
             "Queue Link": line.bt_link or "",
@@ -89,8 +66,8 @@ def view_payment_packet(db: Session = Depends(get_db)):
     )
     rows = [
         {
-            "Partner": vendor.organization, "Invoice": line.vendor_inv_no or "",
-            "Invoice Date": line.vendor_date or "", "Amount": line.vendor_amount,
+            "Vendor": vendor.organization, "Invoice": line.vendor_inv_no or "",
+            "Invoice Date": line.vendor_date or "", "Currency": line.vendor_currency or "", "Amount": line.vendor_amount,
             "Age (days)": line.vendor_age_days if line.vendor_age_days is not None else "",
             "Credit Term": vendor.credit_days or 0, "Books Txn No": line.ajww_txn_no or "",
         }

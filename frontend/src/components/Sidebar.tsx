@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import appLogo from "@/assets/app-logo.png";
+import cargomaticIcon from "@/assets/cargomatic-icon.png";
 
 type Props = { collapsed: boolean; onToggle: () => void };
 
 const NAV = [
   {
     href: "/",
-    label: "Command Center",
+    label: "Dashboard",
     exact: true,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -28,6 +30,17 @@ const NAV = [
     ),
   },
   {
+    href: "/snapshots",
+    label: "Data Sources",
+    exact: false,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+      </svg>
+    ),
+  },
+  {
     href: "/jobs",
     label: "Recon Jobs",
     exact: false,
@@ -38,18 +51,8 @@ const NAV = [
     ),
   },
   {
-    href: "/history",
-    label: "History",
-    exact: false,
-    icon: (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="9" />
-      </svg>
-    ),
-  },
-  {
     href: "/master",
-    label: "Partners",
+    label: "Vendors",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -59,13 +62,12 @@ const NAV = [
     ),
   },
   {
-    href: "/snapshots",
-    label: "Data Sources",
+    href: "/history",
+    label: "History",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+        <path d="M12 8v4l3 3" /><circle cx="12" cy="12" r="9" />
       </svg>
     ),
   },
@@ -98,19 +100,26 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
     >
       {/* Brand */}
       <div className="flex items-center px-4 border-b border-white/[0.06]" style={{ height: 72, minHeight: 72 }}>
-        {/* Logo mark */}
         <div
-          className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-base"
-          style={{ background: "#22D3EE" }}
+          className={`relative h-9 overflow-hidden ${
+            collapsed ? "w-9" : "w-[172px]"
+          }`}
         >
-          C
+          <img
+            src={cargomaticIcon.src}
+            alt="Cargomatic"
+            className={`absolute left-0 top-0 w-9 h-9 rounded-xl object-contain transition-all duration-300 ease-in-out ${
+              collapsed ? "opacity-100 scale-100 translate-x-0 delay-100" : "opacity-0 scale-90 translate-x-2 pointer-events-none"
+            }`}
+          />
+          <img
+            src={appLogo.src}
+            alt="Cargomatic"
+            className={`absolute left-0 top-1/2 h-8 w-auto max-w-[172px] -translate-y-1/2 object-contain transition-all duration-300 ease-in-out ${
+              collapsed ? "opacity-0 scale-95 -translate-x-2 pointer-events-none" : "opacity-100 scale-100 translate-x-0 duration-0"
+            }`}
+          />
         </div>
-        {!collapsed && (
-          <div className="ml-3 overflow-hidden whitespace-nowrap">
-            <div className="text-white font-semibold text-[13.5px] leading-tight tracking-[-0.01em]">ClearCargo</div>
-            <div className="text-[#4B6280] text-[10px] leading-tight mt-0.5">AI back-office automation</div>
-          </div>
-        )}
         {/* Collapse toggle — shown when expanded, floats right */}
         {!collapsed && (
           <button
@@ -175,20 +184,19 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
             );
           })}
         </div>
+        {collapsed && (
+          <button
+            onClick={onToggle}
+            className="mt-2 mx-auto w-full h-10 rounded-xl flex items-center justify-center text-[#475569] hover:text-[#94A3B8] hover:bg-white/[0.06] transition-colors"
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
+        )}
       </nav>
-
-      {/* Expand button when collapsed */}
-      {collapsed && (
-        <button
-          onClick={onToggle}
-          className="mx-auto mb-2 w-9 h-9 rounded-xl flex items-center justify-center text-[#475569] hover:text-[#94A3B8] hover:bg-white/[0.06] transition-colors"
-          aria-label="Expand sidebar"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 18l6-6-6-6" />
-          </svg>
-        </button>
-      )}
 
       {/* Footer */}
       <div

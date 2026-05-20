@@ -56,17 +56,11 @@ export default function Dashboard() {
               Live workspace
             </span>
           </div>
-          <h1 className="text-[28px] font-bold text-slate-900 tracking-[-0.02em]">Command Center</h1>
+          <h1 className="text-[28px] font-bold text-slate-900 tracking-[-0.02em]">Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1 max-w-lg leading-relaxed">
             Monitor reconciliation runs, open exceptions, source files, and payment-ready items across your freight finance workflow.
           </p>
         </div>
-        <Link href="/jobs/new" className="btn-primary shrink-0">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          New Reconciliation
-        </Link>
       </div>
 
       {err && (
@@ -106,18 +100,13 @@ export default function Dashboard() {
                 ? `${residualUnsolved.length} run${residualUnsolved.length !== 1 ? "s" : ""} have an unresolved residual gap.`
                 : closed.length > 0
                 ? "All reconciled runs are balanced."
-                : "Upload partner data and start a reconciliation to begin."}
+                : "Upload vendor data and start a reconciliation to begin."}
             </p>
-          </div>
-          <div className="mt-5 relative">
-            <Link href="/jobs/new" className="btn-primary">
-              Start Reconciliation →
-            </Link>
           </div>
         </div>
 
         <AuroraStatCard
-          label="Partners"
+          label="Vendors"
           value={Object.keys(vendors).length}
           href="/master"
           accent="#22D3EE"
@@ -203,7 +192,7 @@ export default function Dashboard() {
           ) : (
             <table className="w-full text-sm">
               <thead><tr className="tbl-head">
-                <th>Partner</th><th>Status</th><th>Created</th><th />
+                <th>Vendor</th><th>Status</th><th>Created</th><th />
               </tr></thead>
               <tbody className="tbl-body">
                 {open.map((j) => (
@@ -234,12 +223,11 @@ export default function Dashboard() {
               accent="#8B5CF6"
               title="No reconciled runs yet"
               desc="Complete a reconciliation to see results here."
-              cta={{ label: "Start now →", href: "/jobs/new" }}
             />
           ) : (
             <table className="w-full text-sm">
               <thead><tr className="tbl-head">
-                <th>Partner</th><th>Residual Gap</th><th>Closed</th><th />
+                <th>Vendor</th><th>Residual Gap</th><th>Closed</th><th />
               </tr></thead>
               <tbody className="tbl-body">
                 {closed.slice(0, 8).map((j) => (
@@ -272,7 +260,7 @@ export default function Dashboard() {
         <BentoSection title="Unresolved Residual Gaps" count={residualUnsolved.length} accentColor="#EF4444">
           <table className="w-full text-sm">
             <thead><tr className="tbl-head">
-              <th>#</th><th>Partner</th><th>Residual Gap</th><th />
+              <th>#</th><th>Vendor</th><th>Residual Gap</th><th />
             </tr></thead>
             <tbody className="tbl-body">
               {residualUnsolved.map((j) => (

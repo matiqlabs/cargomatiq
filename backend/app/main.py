@@ -29,6 +29,7 @@ def _run_migrations() -> None:
         ("uploaded_soas", "reviewed_rows", "TEXT"),
         ("uploaded_soas", "review_status", "TEXT"),
         ("uploaded_soas", "reviewed_at", "TEXT"),
+        ("recon_line_results", "vendor_currency", "TEXT"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in new_cols:

@@ -19,6 +19,7 @@ class ReconLine:
     vendor_inv_no: Optional[str] = None
     vendor_date: Optional[str] = None
     vendor_amount: Optional[float] = None
+    vendor_currency: Optional[str] = None
     vendor_age_days: Optional[int] = None
     ajww_inv_no: Optional[str] = None
     ajww_txn_no: Optional[str] = None
@@ -116,6 +117,7 @@ def reconcile(
                     vendor_inv_no=str(vr.get("invoice_no") or "") or None,
                     vendor_date=vr.get("invoice_date"),
                     vendor_amount=vamt,
+                    vendor_currency=vr.get("currency"),
                     vendor_age_days=age,
                     ajww_inv_no=str(c["vendor_invoice_no"] or "") or None,
                     ajww_txn_no=c["transaction_no"],
@@ -151,6 +153,7 @@ def reconcile(
                     vendor_inv_no=str(vr.get("invoice_no") or "") or None,
                     vendor_date=vr.get("invoice_date"),
                     vendor_amount=vamt,
+                    vendor_currency=vr.get("currency"),
                     vendor_age_days=age,
                     ajww_inv_no=str(c["vendor_invoice_no"] or "") or None,
                     ajww_txn_no=c["transaction_no"],
@@ -173,6 +176,7 @@ def reconcile(
             vendor_inv_no=str(vr.get("invoice_no") or "") or None,
             vendor_date=vr.get("invoice_date"),
             vendor_amount=vamt,
+            vendor_currency=vr.get("currency"),
             vendor_age_days=age,
             diff=None,
         )

@@ -14,13 +14,13 @@ from app.reports.excel_export import (
     write_header_row,
 )
 
-COLUMNS = ["Partner", "Invoice", "Invoice Date", "Amount", "Age (days)", "Credit Term", "Books Txn No"]
+COLUMNS = ["Vendor", "Invoice", "Invoice Date", "Currency", "Amount", "Age (days)", "Credit Term", "Books Txn No"]
 
 
 def build(db: Session) -> bytes:
     wb = new_workbook()
     ws = wb.create_sheet("Payment Packet")
-    write_header_row(ws, 1, COLUMNS, widths=[30, 16, 14, 14, 10, 12, 16])
+    write_header_row(ws, 1, COLUMNS, widths=[30, 16, 14, 10, 14, 10, 12, 16])
 
     rows = (
         db.query(models.ReconLineResult, models.Vendor)
@@ -33,12 +33,13 @@ def build(db: Session) -> bytes:
 
     by_vendor: dict = {}
     for line, vendor in rows:
-        by_vendor.setdefault(vendor, []).append(line)
+        by_vendor.setdefault((vendor, line.vendor_currency or ""), []).append(line)
 
     r = 2
     grand = 0.0
-    for vendor in sorted(by_vendor, key=lambda v: v.organization):
-        c = ws.cell(row=r, column=1, value=vendor.organization)
+    for vendor, currency in sorted(by_vendor, key=lambda item: (item[0].organization, item[1])):
+        heading = f"{vendor.organization} ({currency})" if currency else vendor.organization
+        c = ws.cell(row=r, column=1, value=heading)
         c.font = SUBHEAD_FONT
         c.fill = SUBHEAD_FILL
         for j in range(2, len(COLUMNS) + 1):
@@ -46,34 +47,35 @@ def build(db: Session) -> bytes:
         r += 1
 
         subtotal = 0.0
-        for line in by_vendor[vendor]:
+        for line in by_vendor[(vendor, currency)]:
             vals = [
                 vendor.organization,
                 line.vendor_inv_no or "",
                 line.vendor_date or "",
+                line.vendor_currency or "",
                 line.vendor_amount,
                 line.vendor_age_days if line.vendor_age_days is not None else "",
                 vendor.credit_days or 0,
                 line.ajww_txn_no or "",
             ]
             for j, val in enumerate(vals, 1):
-                fmt = "#,##0.00" if j == 4 else None
+                fmt = "#,##0.00" if j == 5 else None
                 write_body_cell(ws.cell(row=r, column=j), val, status="ok_to_pay", fmt=fmt)
             subtotal += line.vendor_amount or 0.0
             r += 1
 
-        sub_cell = ws.cell(row=r, column=3, value="Subtotal")
+        sub_cell = ws.cell(row=r, column=4, value="Subtotal")
         sub_cell.font = BOLD_BODY_FONT
-        amt_cell = ws.cell(row=r, column=4, value=round(subtotal, 2))
+        amt_cell = ws.cell(row=r, column=5, value=round(subtotal, 2))
         amt_cell.font = BOLD_BODY_FONT
         amt_cell.number_format = "#,##0.00"
         r += 2
         grand += subtotal
 
     if by_vendor:
-        gc = ws.cell(row=r, column=3, value="GRAND TOTAL")
+        gc = ws.cell(row=r, column=4, value="GRAND TOTAL")
         gc.font = BOLD_BODY_FONT
-        ac = ws.cell(row=r, column=4, value=round(grand, 2))
+        ac = ws.cell(row=r, column=5, value=round(grand, 2))
         ac.font = BOLD_BODY_FONT
         ac.number_format = "#,##0.00"
 
