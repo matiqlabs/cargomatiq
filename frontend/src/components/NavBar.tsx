@@ -8,6 +8,7 @@ const TABS = [
   { href: "/jobs/new", label: "New Reconciliation" },
   { href: "/snapshots", label: "Data Sources" },
   { href: "/jobs", label: "Recon Jobs" },
+  { href: "/exceptions", label: "Exception Workbench" },
   { href: "/master", label: "Vendors" },
   { href: "/history", label: "History" },
   { href: "/reports", label: "Reports" },
@@ -18,7 +19,7 @@ export default function NavBar() {
   return (
     <header className="bg-slate-900 text-white">
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-6">
-        <Link href="/" className="text-lg font-bold tracking-tight">ClearCargo</Link>
+        <Link href="/" className="text-lg font-bold tracking-tight">Cargomatiq</Link>
         <nav className="flex gap-1 ml-4">
           {TABS.map((t) => {
             const active = (t.href === "/" ? path === "/" : path?.startsWith(t.href));

@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
-    app_name: str = "ClearCargo"
+    app_name: str = "Cargomatiq"
     database_url: str = f"sqlite:///{BASE_DIR / 'recon.db'}"
     storage_dir: Path = BASE_DIR / "storage"
     residual_tolerance: float = 1.0          # USD; closing-equation threshold

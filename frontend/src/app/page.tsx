@@ -190,25 +190,27 @@ export default function Dashboard() {
           {open.length === 0 ? (
             <AuroraEmpty icon="✓" accent="#2DD4BF" title="All clear" desc="No runs currently need attention." />
           ) : (
-            <table className="w-full text-sm">
-              <thead><tr className="tbl-head">
-                <th>Vendor</th><th>Status</th><th>Created</th><th />
-              </tr></thead>
-              <tbody className="tbl-body">
-                {open.map((j) => (
-                  <tr key={j.id}>
-                    <td className="font-medium text-slate-800">{vendors[j.vendor_id]?.organization || "—"}</td>
-                    <td><StatusBadge status={j.status} /></td>
-                    <td className="text-slate-400 text-xs">{new Date(j.created_at).toLocaleDateString()}</td>
-                    <td>
-                      <Link href={`/jobs/${j.id}`} className="text-xs font-semibold transition-colors" style={{ color: "#22D3EE" }}>
-                        Open →
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="max-h-[270px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10"><tr className="tbl-head">
+                  <th>Vendor</th><th>Status</th><th>Created</th><th />
+                </tr></thead>
+                <tbody className="tbl-body">
+                  {open.map((j) => (
+                    <tr key={j.id}>
+                      <td className="font-medium text-slate-800">{vendors[j.vendor_id]?.organization || "—"}</td>
+                      <td><StatusBadge status={j.status} /></td>
+                      <td className="text-slate-400 text-xs">{new Date(j.created_at).toLocaleDateString()}</td>
+                      <td>
+                        <Link href={`/jobs/${j.id}`} className="text-xs font-semibold transition-colors" style={{ color: "#22D3EE" }}>
+                          Open →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </BentoSection>
 
@@ -230,7 +232,7 @@ export default function Dashboard() {
                 <th>Vendor</th><th>Residual Gap</th><th>Closed</th><th />
               </tr></thead>
               <tbody className="tbl-body">
-                {closed.slice(0, 8).map((j) => (
+                {closed.slice(0, 5).map((j) => (
                   <tr key={j.id}>
                     <td className="font-medium text-slate-800">{vendors[j.vendor_id]?.organization || "—"}</td>
                     <td className={`font-semibold tabular-nums ${j.closed ? "text-teal-600" : "text-red-500"}`}>

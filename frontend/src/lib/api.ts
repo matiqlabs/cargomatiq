@@ -34,6 +34,13 @@ export const api = {
       body: body ? JSON.stringify(body) : undefined,
       cache: "no-store",
     }).then(handle),
+  patch: (path: string, body?: any) =>
+    fetch(`${BASE}${path}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store",
+    }).then(handle),
   postForm: (path: string, form: FormData) =>
     fetch(`${BASE}${path}`, { method: "POST", body: form, cache: "no-store" }).then(handle),
   delete: (path: string) =>
@@ -95,9 +102,56 @@ export type ExtractionReviewData = {
   vendor_name: string;
   vendor_credit_days: number;
   soa_filename: string | null;
+  document_source_type: string | null;
+  document_source_name: string | null;
+  document_source_details: string | null;
+  document_download_url: string | null;
   row_count: number;
   rows: ExtractionReviewRow[];
   review_status: string | null;
+};
+
+export type ExceptionCase = {
+  id: number;
+  job_id: number;
+  vendor: string;
+  vendor_country: string | null;
+  status: string;
+  reason: string;
+  recommended_action: string;
+  invoice_no: string | null;
+  invoice_date: string | null;
+  currency: string | null;
+  amount: number | null;
+  diff: number | null;
+  books_txn_no: string | null;
+  queue_label: string | null;
+  queue_owner: string | null;
+  queue_link: string | null;
+  age_days: number | null;
+  state: "open" | "in_progress" | "waiting_vendor" | "resolved";
+  owner: string | null;
+  priority: "High" | "Medium" | "Low";
+  due_date: string | null;
+  note: string | null;
+  resolution: string | null;
+  created_at: string;
+};
+
+export type ExceptionSummary = {
+  total: number;
+  open: number;
+  in_progress: number;
+  waiting_vendor: number;
+  resolved: number;
+  high_priority: number;
+  due_soon: number;
+  total_amount: number;
+};
+
+export type ExceptionWorkbenchData = {
+  summary: ExceptionSummary;
+  cases: ExceptionCase[];
 };
 
 export function money(n: number | null | undefined) {

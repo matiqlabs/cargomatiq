@@ -200,35 +200,72 @@ export default function ReviewExtractionPage() {
 
       {/* Metadata strip */}
       {meta && (
-        <div className="card px-5 py-3.5 flex items-center gap-5 flex-wrap">
-          <div>
-            <span className="label block mb-0.5">Vendor</span>
-            <span className="text-sm font-semibold text-slate-800">{meta.vendor_name}</span>
-          </div>
-          <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
-          <div>
-            <span className="label block mb-0.5">Credit Period</span>
-            <span className="text-sm font-semibold text-slate-800">{meta.vendor_credit_days} days</span>
-          </div>
-          <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
-          <div>
-            <span className="label block mb-0.5">Statement</span>
-            <span className="text-xs font-mono text-slate-600">{meta.soa_filename || "—"}</span>
-          </div>
-          <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
-          <div className="flex items-center gap-2">
-            <StatusPill label={`${rows.length} total`} variant="slate" />
-            <StatusPill label={`${includedCount} included`} variant="teal" />
-            {ignoredCount > 0 && <StatusPill label={`${ignoredCount} ignored`} variant="amber" />}
-          </div>
-          {meta.review_status === "saved" && (
-            <div className="ml-auto flex items-center gap-1.5 text-[11px] font-semibold text-teal-600">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-              Draft saved
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-4">
+          <div className="card px-5 py-3.5 flex items-center gap-5 flex-wrap">
+            <div>
+              <span className="label block mb-0.5">Vendor</span>
+              <span className="text-sm font-semibold text-slate-800">{meta.vendor_name}</span>
             </div>
-          )}
+            <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
+            <div>
+              <span className="label block mb-0.5">Credit Period</span>
+              <span className="text-sm font-semibold text-slate-800">{meta.vendor_credit_days} days</span>
+            </div>
+            <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
+            <div>
+              <span className="label block mb-0.5">Statement</span>
+              <span className="text-xs font-mono text-slate-600">{meta.soa_filename || "—"}</span>
+            </div>
+            <div className="w-px h-8 bg-slate-200 flex-shrink-0" />
+            <div className="flex items-center gap-2">
+              <StatusPill label={`${rows.length} total`} variant="slate" />
+              <StatusPill label={`${includedCount} included`} variant="teal" />
+              {ignoredCount > 0 && <StatusPill label={`${ignoredCount} ignored`} variant="amber" />}
+            </div>
+            {meta.review_status === "saved" && (
+              <div className="ml-auto flex items-center gap-1.5 text-[11px] font-semibold text-teal-600">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Draft saved
+              </div>
+            )}
+          </div>
+          <div className="card p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <span className="label block mb-1">Document Preview</span>
+                <div className="text-sm font-semibold text-slate-800 truncate">{meta.document_source_name || meta.soa_filename || "Vendor statement"}</div>
+                <div className="text-[11px] text-slate-400 mt-1 capitalize">
+                  {(meta.document_source_type || "uploaded_statement").replace(/_/g, " ")}
+                </div>
+              </div>
+              {meta.document_download_url && (
+                <a
+                  href={api.fileUrl(meta.document_download_url)}
+                  className="btn-secondary px-3"
+                  style={{ height: 32 }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Preview
+                </a>
+              )}
+            </div>
+            {meta.document_source_details && (
+              <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                {meta.document_source_details}
+              </p>
+            )}
+            {meta.soa_filename?.toLowerCase().endsWith(".msg") && (
+              <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                The uploaded email was converted into an extracted statement workbook from its best matching attachment or body table.
+              </p>
+            )}
+          </div>
         </div>
       )}
 

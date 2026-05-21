@@ -51,6 +51,16 @@ const NAV = [
     ),
   },
   {
+    href: "/exceptions",
+    label: "Exception Workbench",
+    exact: false,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 4h16v5H4z" /><path d="M4 15h16v5H4z" /><path d="M8 9v6" /><path d="M16 9v6" />
+      </svg>
+    ),
+  },
+  {
     href: "/master",
     label: "Vendors",
     exact: false,
@@ -100,26 +110,29 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
     >
       {/* Brand */}
       <div className="flex items-center px-4 border-b border-white/[0.06]" style={{ height: 72, minHeight: 72 }}>
-        <div
+        <Link
+          href="/"
+          title="Dashboard"
+          aria-label="Go to dashboard"
           className={`relative h-9 overflow-hidden ${
             collapsed ? "w-9" : "w-[172px]"
           }`}
         >
           <img
             src={cargomaticIcon.src}
-            alt="Cargomatic"
+            alt="Cargomatiq"
             className={`absolute left-0 top-0 w-9 h-9 rounded-xl object-contain transition-all duration-300 ease-in-out ${
               collapsed ? "opacity-100 scale-100 translate-x-0 delay-100" : "opacity-0 scale-90 translate-x-2 pointer-events-none"
             }`}
           />
           <img
             src={appLogo.src}
-            alt="Cargomatic"
+            alt="Cargomatiq"
             className={`absolute left-0 top-1/2 h-8 w-auto max-w-[172px] -translate-y-1/2 object-contain transition-all duration-300 ease-in-out ${
               collapsed ? "opacity-0 scale-95 -translate-x-2 pointer-events-none" : "opacity-100 scale-100 translate-x-0 duration-0"
             }`}
           />
-        </div>
+        </Link>
         {/* Collapse toggle — shown when expanded, floats right */}
         {!collapsed && (
           <button

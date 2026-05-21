@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -189,13 +190,14 @@ def upload_soa(
     # Convert .msg to xlsx before passing through the normal extraction pipeline.
     # The converter produces a standardised 3-column workbook (INV Number / INV Date /
     # Outstanding Amount) that the existing alias dictionary maps at score 100.
+    msg_source = None
     if filename_lower.endswith(".msg"):
         try:
             from app.extraction.msg_converter import (
                 MsgConversionError,
                 workbook_bytes_from_msg,
             )
-            _, xlsx_bytes = workbook_bytes_from_msg(dest)
+            msg_source, xlsx_bytes = workbook_bytes_from_msg(dest)
         except Exception as exc:
             dest.unlink(missing_ok=True)
             raise HTTPException(400, f"Failed to convert .msg to Excel: {exc}")
@@ -253,7 +255,14 @@ def upload_soa(
         storage_path=str(dest),
         raw_headers=table.headers,
         raw_preview=table.rows[:25],
-        mapping={"_suggested": suggested, "_sheet": chosen_sheet, "_header_row": header_row},
+        mapping={
+            "_suggested": suggested,
+            "_sheet": chosen_sheet,
+            "_header_row": header_row,
+            "_source_type": msg_source.source_type if msg_source else "uploaded_statement",
+            "_source_name": msg_source.source_name if msg_source else file.filename,
+            "_source_details": msg_source.source_details if msg_source else "Extracted from the uploaded vendor statement file.",
+        },
     )
     db.add(soa)
     job.status = "mapping_pending"
@@ -403,6 +412,7 @@ def _resolve_vendor_rows(soa: models.UploadedSOA) -> list[dict]:
                 "invoice_no": r["invoice_no"],
                 "invoice_date": r.get("invoice_date"),
                 "amount": r["amount"],
+                "currency": r.get("currency"),
             }
             for r in soa.reviewed_rows
             if not r.get("ignored", False)
@@ -426,15 +436,39 @@ def get_extraction_review(job_id: int, db: Session = Depends(get_db)):
         rows = _canonical_to_review(soa.canonical_rows, job.vendor)
     else:
         rows = []
+    source_meta = soa.mapping or {}
     return ExtractionReviewOut(
         job_id=job.id,
         vendor_name=job.vendor.organization,
         vendor_credit_days=job.vendor.credit_days or 0,
         soa_filename=soa.filename,
+        document_source_type=source_meta.get("_source_type") or "uploaded_statement",
+        document_source_name=source_meta.get("_source_name") or soa.filename,
+        document_source_details=source_meta.get("_source_details"),
+        document_download_url=f"/api/jobs/{job.id}/soa/download",
         row_count=len(rows),
         rows=rows,
         review_status=soa.review_status,
     )
+
+
+@router.get("/{job_id}/soa/download")
+def download_soa_document(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(models.ReconJob).get(job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job.soa is None:
+        raise HTTPException(400, "No SOA uploaded for this job.")
+    path = Path(job.soa.storage_path)
+    if not path.exists():
+        raise HTTPException(404, "Stored statement file not found.")
+
+    original = job.soa.filename or path.name
+    if original.lower().endswith(".msg") and path.suffix.lower() == ".xlsx":
+        download_name = f"{Path(original).stem}_extracted_statement.xlsx"
+    else:
+        download_name = original
+    return FileResponse(path, filename=download_name)
 
 
 @router.put("/{job_id}/extraction-review")

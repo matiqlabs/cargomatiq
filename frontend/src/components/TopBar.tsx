@@ -9,6 +9,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/snapshots": "Data Sources",
   "/jobs/new": "New Reconciliation",
   "/jobs": "Recon Jobs",
+  "/exceptions": "Exception Workbench",
   "/history": "History",
   "/reports": "Finance Reports",
 };
@@ -18,7 +19,7 @@ function getTitle(path: string): string {
   if (path.startsWith("/jobs/new")) return "New Reconciliation";
   if (path.startsWith("/jobs/")) return "Reconciliation Run";
   if (PAGE_TITLES[path]) return PAGE_TITLES[path];
-  return "ClearCargo";
+  return "Cargomatiq";
 }
 
 export default function TopBar({ collapsed: _collapsed }: { collapsed: boolean }) {
@@ -38,7 +39,7 @@ export default function TopBar({ collapsed: _collapsed }: { collapsed: boolean }
     >
       {/* Left — breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm min-w-0">
-        <span className="text-slate-400 font-medium whitespace-nowrap">ClearCargo</span>
+        <span className="text-slate-400 font-medium whitespace-nowrap">Cargomatiq</span>
         <svg
           width="12" height="12" viewBox="0 0 24 24" fill="none"
           stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"

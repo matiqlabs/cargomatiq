@@ -15,7 +15,7 @@ from app.core.config import settings
 from app.db.session import Base, engine
 from app.db import models  # noqa: F401 — ensure models are registered before create_all
 
-from app.api import jobs, master, reports, snapshots, vendors
+from app.api import exceptions, jobs, master, reports, snapshots, vendors
 
 
 log = logging.getLogger("recon")
@@ -30,6 +30,12 @@ def _run_migrations() -> None:
         ("uploaded_soas", "review_status", "TEXT"),
         ("uploaded_soas", "reviewed_at", "TEXT"),
         ("recon_line_results", "vendor_currency", "TEXT"),
+        ("recon_line_results", "exception_state", "TEXT"),
+        ("recon_line_results", "exception_owner", "TEXT"),
+        ("recon_line_results", "exception_priority", "TEXT"),
+        ("recon_line_results", "exception_due_date", "TEXT"),
+        ("recon_line_results", "exception_note", "TEXT"),
+        ("recon_line_results", "exception_resolution", "TEXT"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in new_cols:
@@ -69,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(vendors.router)
     app.include_router(snapshots.router)
     app.include_router(jobs.router)
+    app.include_router(exceptions.router)
     app.include_router(reports.router)
 
     @app.get("/")

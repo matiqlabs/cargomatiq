@@ -181,6 +181,12 @@ class ReconLineResult(Base):
     bt_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bt_link: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     bt_owner: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    exception_state: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    exception_owner: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    exception_priority: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    exception_due_date: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    exception_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    exception_resolution: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     job: Mapped[ReconJob] = relationship(back_populates="results")
 

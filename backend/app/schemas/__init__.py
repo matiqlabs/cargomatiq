@@ -25,6 +25,10 @@ class ExtractionReviewOut(BaseModel):
     vendor_name: str
     vendor_credit_days: int = 0
     soa_filename: Optional[str] = None
+    document_source_type: Optional[str] = None
+    document_source_name: Optional[str] = None
+    document_source_details: Optional[str] = None
+    document_download_url: Optional[str] = None
     row_count: int
     rows: list[ExtractionReviewRow]
     review_status: Optional[str] = None
@@ -128,3 +132,55 @@ class ReconJobDetail(BaseModel):
     results: list[ReconLineOut] = []
     mapping: Optional[dict] = None
     soa_filename: Optional[str] = None
+
+
+class ExceptionCaseOut(BaseModel):
+    id: int
+    job_id: int
+    vendor: str
+    vendor_country: Optional[str] = None
+    status: str
+    reason: str
+    recommended_action: str
+    invoice_no: Optional[str] = None
+    invoice_date: Optional[str] = None
+    currency: Optional[str] = None
+    amount: Optional[float] = None
+    diff: Optional[float] = None
+    books_txn_no: Optional[str] = None
+    queue_label: Optional[str] = None
+    queue_owner: Optional[str] = None
+    queue_link: Optional[str] = None
+    age_days: Optional[int] = None
+    state: str = "open"
+    owner: Optional[str] = None
+    priority: str = "Medium"
+    due_date: Optional[str] = None
+    note: Optional[str] = None
+    resolution: Optional[str] = None
+    created_at: datetime
+
+
+class ExceptionSummaryOut(BaseModel):
+    total: int = 0
+    open: int = 0
+    in_progress: int = 0
+    waiting_vendor: int = 0
+    resolved: int = 0
+    high_priority: int = 0
+    due_soon: int = 0
+    total_amount: float = 0
+
+
+class ExceptionWorkbenchOut(BaseModel):
+    summary: ExceptionSummaryOut
+    cases: list[ExceptionCaseOut]
+
+
+class UpdateExceptionIn(BaseModel):
+    state: Optional[str] = None
+    owner: Optional[str] = None
+    priority: Optional[str] = None
+    due_date: Optional[str] = None
+    note: Optional[str] = None
+    resolution: Optional[str] = None

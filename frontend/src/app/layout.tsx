@@ -4,7 +4,7 @@ import AppShell from "@/components/AppShell";
 import cargomaticIcon from "@/assets/cargomatic-icon.png";
 
 export const metadata: Metadata = {
-  title: "ClearCargo",
+  title: "Cargomatiq",
   description: "AI back-office automation for freight forwarders",
   icons: {
     icon: cargomaticIcon.src,
