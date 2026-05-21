@@ -1,10 +1,10 @@
-# Recon Platform — AJWW MVP
+# Recon Platform — MVP
 
-Reconciliation platform for AJ Worldwide. Replaces the manual Excel-based AP
+Reconciliation platform for logistics. Replaces the manual Excel-based AP
 workflow where accountants reconcile vendor SOAs against Logisys (book of
 record) with Bravotran (BT) waiting-queue context.
 
-The canonical test case is Quick Logistics LLC US — recon must close at
+The canonical test case is ABC Logistics LLC US — recon must close at
 residual = 0 against the four real files in `sample_data/`.
 
 ## Stack
