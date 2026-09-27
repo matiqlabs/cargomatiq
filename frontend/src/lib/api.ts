@@ -154,6 +154,28 @@ export type ExceptionWorkbenchData = {
   cases: ExceptionCase[];
 };
 
+export type InboxItem = {
+  id: number; sender: string | null; subject: string | null; received_at: string | null;
+  status: string; resolution_status: string | null; resolution_reason: Record<string, unknown>;
+  shipment_id: number | null; error_message: string | null;
+  attachments: { id: number; filename: string; mime_type: string }[];
+  documents: { id: number; filename: string; document_type: string }[];
+};
+export type Shipment = {
+  id: number; job_code: string; transport_mode: string; direction: string | null; status: string;
+  canonical_facts: Record<string, string>; references: { type: string; value: string }[];
+  exception_count: number; created_at: string;
+};
+export type OperationalException = {
+  id: number; shipment_id: number | null; type: string; severity: string; title: string;
+  description: string; evidence: Record<string, unknown>[]; state: string; owner: string | null;
+  due_at: string | null; resolution: string | null; created_at: string;
+};
+export type OperationalTask = {
+  id: number; shipment_id: number | null; exception_id: number | null; title: string;
+  state: string; owner: string | null; due_at: string | null; created_at: string;
+};
+
 export function money(n: number | null | undefined) {
   if (n === null || n === undefined) return "";
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });

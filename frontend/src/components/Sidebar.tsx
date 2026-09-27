@@ -7,10 +7,10 @@ import cargomaticIcon from "@/assets/cargomatic-icon.png";
 
 type Props = { collapsed: boolean; onToggle: () => void };
 
-const NAV = [
+const OPERATIONS_NAV = [
   {
     href: "/",
-    label: "Dashboard",
+    label: "Operations",
     exact: true,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -20,8 +20,8 @@ const NAV = [
     ),
   },
   {
-    href: "/jobs/new",
-    label: "New Reconciliation",
+    href: "/inbox",
+    label: "Inbox",
     exact: true,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -30,8 +30,8 @@ const NAV = [
     ),
   },
   {
-    href: "/snapshots",
-    label: "Data Sources",
+    href: "/shipments",
+    label: "Shipments",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -41,8 +41,8 @@ const NAV = [
     ),
   },
   {
-    href: "/jobs",
-    label: "Recon Jobs",
+    href: "/operations/exceptions",
+    label: "Exceptions",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -51,8 +51,8 @@ const NAV = [
     ),
   },
   {
-    href: "/exceptions",
-    label: "Exception Workbench",
+    href: "/tasks",
+    label: "Tasks",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -60,9 +60,12 @@ const NAV = [
       </svg>
     ),
   },
+];
+
+const FINANCE_NAV = [
   {
-    href: "/master",
-    label: "Vendors",
+    href: "/jobs",
+    label: "Reconciliation",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -72,8 +75,38 @@ const NAV = [
     ),
   },
   {
+    href: "/jobs/new",
+    label: "New Reconciliation",
+    exact: true,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" />
+      </svg>
+    ),
+  },
+  {
     href: "/history",
-    label: "History",
+    label: "Reconciliation History",
+    exact: false,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 3v6h6M12 7v5l3 2" />
+      </svg>
+    ),
+  },
+  {
+    href: "/exceptions",
+    label: "Finance Exceptions",
+    exact: false,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 9v4M12 17h.01" /><circle cx="12" cy="12" r="9" />
+      </svg>
+    ),
+  },
+  {
+    href: "/reports",
+    label: "Finance Reports",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -81,14 +114,27 @@ const NAV = [
       </svg>
     ),
   },
+];
+
+const SETTINGS_NAV = [
   {
-    href: "/reports",
-    label: "Reports",
+    href: "/snapshots",
+    label: "Finance Data Uploads",
     exact: false,
     icon: (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
         <line x1="6" y1="20" x2="6" y2="14" /><line x1="2" y1="20" x2="22" y2="20" />
+      </svg>
+    ),
+  },
+  {
+    href: "/master",
+    label: "Master Data",
+    exact: false,
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 7h8M8 11h8M8 15h5" />
       </svg>
     ),
   },
@@ -102,6 +148,12 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
     if (href === "/jobs") return path === "/jobs" || (path?.startsWith("/jobs/") && !path.startsWith("/jobs/new"));
     return path?.startsWith(href);
   }
+
+  const sections = [
+    { label: "Operations", items: OPERATIONS_NAV },
+    { label: "Finance", items: FINANCE_NAV },
+    { label: "Settings", items: SETTINGS_NAV },
+  ];
 
   return (
     <aside
@@ -149,13 +201,15 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
 
       {/* Nav */}
       <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden" style={{ padding: collapsed ? "16px 10px" : "16px 12px" }}>
-        {!collapsed && (
-          <div className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#2D3F54] px-2 mb-3">
-            Navigation
-          </div>
-        )}
-        <div className="space-y-0.5">
-          {NAV.map((item) => {
+        <div className="space-y-4">
+          {sections.map((section) => (
+            <div key={section.label} className="space-y-0.5">
+              {!collapsed && (
+                <div className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#2D3F54] px-2 mb-2">
+                  {section.label}
+                </div>
+              )}
+              {section.items.map((item) => {
             const active = isActive(item.href, item.exact);
             return (
               <Link
@@ -195,7 +249,9 @@ export default function Sidebar({ collapsed, onToggle }: Props) {
                 )}
               </Link>
             );
-          })}
+              })}
+            </div>
+          ))}
         </div>
         {collapsed && (
           <button

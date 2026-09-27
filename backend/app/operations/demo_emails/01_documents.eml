@@ -1,0 +1,32 @@
+From: abc.automotive@example.com
+To: ops@example.com
+Subject: Documents for PO-81912 Pune to Hamburg
+Date: Mon, 05 Oct 2026 09:00:00 +0000
+Message-ID: <demo-01@cargomatiq.local>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="demo01"
+
+--demo01
+Content-Type: text/plain; charset=utf-8
+
+Commercial documents for PO-81912.
+
+--demo01
+Content-Type: text/plain; name="Commercial_Invoice_INV-88271.txt"
+Content-Disposition: attachment; filename="Commercial_Invoice_INV-88271.txt"
+
+Commercial Invoice
+PO: PO-81912
+Invoice: INV-88271
+Consignee: RheinAuto GmbH
+Gross Weight: 9840 KG
+
+--demo01
+Content-Type: text/plain; name="Packing_List_PO-81912.txt"
+Content-Disposition: attachment; filename="Packing_List_PO-81912.txt"
+
+Packing List
+PO: PO-81912
+Gross Weight: 9840 KG
+
+--demo01--

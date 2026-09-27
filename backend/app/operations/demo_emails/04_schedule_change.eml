@@ -1,0 +1,22 @@
+From: maersk@example.com
+To: ops@example.com
+Subject: Schedule update MAEU842910
+Date: Thu, 08 Oct 2026 09:00:00 +0000
+Message-ID: <demo-04@cargomatiq.local>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="demo04"
+
+--demo04
+Content-Type: text/plain; charset=utf-8
+
+Booking MAEU842910 schedule update.
+
+--demo04
+Content-Type: text/plain; name="Schedule_Update.txt"
+Content-Disposition: attachment; filename="Schedule_Update.txt"
+
+Booking MAEU842910 schedule update.
+ETD: 2026-10-15
+ETA: 2026-11-07
+
+--demo04--

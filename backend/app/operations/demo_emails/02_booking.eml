@@ -1,0 +1,27 @@
+From: maersk@example.com
+To: ops@example.com
+Subject: Booking Confirmation MAEU842910
+Date: Tue, 06 Oct 2026 09:00:00 +0000
+Message-ID: <demo-02@cargomatiq.local>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="demo02"
+
+--demo02
+Content-Type: text/plain; charset=utf-8
+
+Booking confirmation for PO-81912.
+
+--demo02
+Content-Type: text/plain; name="Booking_Confirmation_MAEU842910.txt"
+Content-Disposition: attachment; filename="Booking_Confirmation_MAEU842910.txt"
+
+Booking Confirmation
+Booking Number: MAEU842910
+PO: PO-81912
+Container: MSKU1234567
+POL: Nhava Sheva
+POD: Hamburg
+ETD: 2026-10-12
+ETA: 2026-11-04
+
+--demo02--

@@ -47,8 +47,9 @@ def run_job(db: Session, job: models.ReconJob, vendor_rows=None) -> models.Recon
 
     # Wipe old results, persist new
     db.query(models.ReconLineResult).filter_by(job_id=job.id).delete()
+    persisted_lines = []
     for rl in result.lines:
-        db.add(models.ReconLineResult(
+        persisted = models.ReconLineResult(
             job_id=job.id,
             status=rl.status,
             match_method=rl.match_method,
@@ -67,7 +68,9 @@ def run_job(db: Session, job: models.ReconJob, vendor_rows=None) -> models.Recon
             bt_note=rl.bt_note,
             bt_link=rl.bt_link,
             bt_owner=rl.bt_owner,
-        ))
+        )
+        db.add(persisted)
+        persisted_lines.append(persisted)
 
     job.residual = result.residual
     job.closed = result.closed
@@ -84,6 +87,12 @@ def run_job(db: Session, job: models.ReconJob, vendor_rows=None) -> models.Recon
         "country": vendor.country,
         "gl_group": vendor.gl_group,
     }
+    db.flush()
+    # Finance remains its own workflow, but finance exceptions become first-
+    # class generic cases alongside shipment exceptions.
+    from app.operations.finance_sync import sync_finance_exception
+    for line in persisted_lines:
+        sync_finance_exception(db, line, vendor.organization)
     db.commit()
     db.refresh(job)
     return job

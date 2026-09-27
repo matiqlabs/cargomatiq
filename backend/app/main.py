@@ -12,10 +12,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
-from app.db.session import Base, engine
+from app.db.session import Base, SessionLocal, engine
 from app.db import models  # noqa: F401 — ensure models are registered before create_all
 
-from app.api import exceptions, jobs, master, reports, snapshots, vendors
+from app.api import exceptions, jobs, master, operations, reports, snapshots, vendors
+from app.operations.service import ensure_configured_mailbox, ensure_default_organization
 
 
 log = logging.getLogger("recon")
@@ -49,6 +50,12 @@ def _run_migrations() -> None:
 def create_app() -> FastAPI:
     Base.metadata.create_all(bind=engine)
     _run_migrations()
+    # Demo mode has one organization. The schema is tenant-ready, while auth
+    # and tenant provisioning remain intentionally outside this MVP.
+    with SessionLocal() as db:
+        organization = ensure_default_organization(db)
+        ensure_configured_mailbox(db, organization)
+        db.commit()
     app = FastAPI(title=settings.app_name)
 
     app.add_middleware(
@@ -77,6 +84,7 @@ def create_app() -> FastAPI:
     app.include_router(jobs.router)
     app.include_router(exceptions.router)
     app.include_router(reports.router)
+    app.include_router(operations.router)
 
     @app.get("/")
     def root():

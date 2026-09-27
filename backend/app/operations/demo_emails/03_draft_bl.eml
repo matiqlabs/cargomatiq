@@ -1,0 +1,24 @@
+From: maersk@example.com
+To: ops@example.com
+Subject: Draft BL for MAEU842910
+Date: Wed, 07 Oct 2026 09:00:00 +0000
+Message-ID: <demo-03@cargomatiq.local>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="demo03"
+
+--demo03
+Content-Type: text/plain; charset=utf-8
+
+Please review the attached Draft BL for Booking MAEU842910.
+
+--demo03
+Content-Type: text/plain; name="Draft_BL_MAEU938271.txt"
+Content-Disposition: attachment; filename="Draft_BL_MAEU938271.txt"
+
+Draft Bill of Lading
+Booking Number: MAEU842910
+BL Number: MAEU938271
+Container: MSKU1234567
+Consignee: RheinAuto AG
+
+--demo03--
