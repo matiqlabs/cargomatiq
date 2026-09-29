@@ -229,24 +229,6 @@ The utility reports copied row counts. Restart the backend and refresh the brows
 
 Historical upload paths are retained as legacy references. Files no longer present at their original paths cannot be reconstructed automatically; re-upload them if they are needed in new local object storage.
 
-## Resetting all Cargomatiq data
-
-To start over with an empty database, this guarded command removes all Finance
-and Operations data, including emails, documents, shipments, reconciliation
-records, tasks, exceptions, organizations, and mailbox cursor state. It also
-clears `backend/storage/objects`. It preserves the PostgreSQL schema and the
-Alembic schema version.
-
-Stop the API and worker first, then run:
-
-```cmd
-cd D:\Projects\cargomatiq\cargomatiq\backend
-.\.venv\Scripts\python.exe scripts\reset_cargomatiq_data.py --confirm-reset-cargomatiq-data
-```
-
-This operation is irreversible. Restart the backend afterwards; it recreates
-the demo organization and the configured IMAP mailbox.
-
 ## Core API endpoints
 
 The frontend uses these endpoints; all are documented at `/docs`.

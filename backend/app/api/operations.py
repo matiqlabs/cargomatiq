@@ -17,27 +17,6 @@ from app.operations.service import ensure_default_organization, ingest_raw_email
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 
 
-def _match_out(email: models.EmailMessage, db: Session) -> dict:
-    """Turn stored resolver rationale into demo-friendly shipment labels."""
-    rationale = email.resolution_reason or {}
-    candidates = []
-    for job_id, references in (rationale.get("candidates") or {}).items():
-        try:
-            job = db.get(models.ForwardingJob, int(job_id))
-        except (TypeError, ValueError):
-            job = None
-        if job:
-            candidates.append({"id": job.id, "job_code": job.job_code, "references": references})
-    target = db.get(models.ForwardingJob, email.resolved_job_id) if email.resolved_job_id else None
-    return {
-        "decision": email.resolution_status,
-        "reason": rationale.get("reason"),
-        "target": {"id": target.id, "job_code": target.job_code} if target else None,
-        "candidates": candidates,
-        "extracted_references": rationale.get("references") or [],
-    }
-
-
 def _email_out(email: models.EmailMessage, db: Session) -> dict:
     attachments = db.scalars(select(models.EmailAttachment).where(models.EmailAttachment.email_id == email.id)).all()
     documents = db.scalars(select(models.Document).join(models.EmailAttachment, models.Document.attachment_id == models.EmailAttachment.id).where(models.EmailAttachment.email_id == email.id)).all()
@@ -47,7 +26,6 @@ def _email_out(email: models.EmailMessage, db: Session) -> dict:
         "resolution_status": email.resolution_status, "resolution_reason": email.resolution_reason or {},
         "shipment_id": email.resolved_job_id, "attachments": [{"id": a.id, "filename": a.filename, "mime_type": a.mime_type} for a in attachments],
         "documents": [{"id": d.id, "filename": d.filename, "document_type": d.document_type} for d in documents],
-        "match": _match_out(email, db),
         "error_message": email.error_message,
     }
 
