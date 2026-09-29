@@ -106,7 +106,11 @@ def resolve_job(db: Session, organization_id: int, references: list[tuple[str, s
         return None, "needs_review", {"candidates": evidence, "reason": "ambiguous_references"}
     if references:
         job = create_job(db, organization_id)
-        return job, "new_job", {"candidates": {}, "reason": "no_existing_reference"}
+        return job, "new_job", {
+            "candidates": {},
+            "reason": "no_existing_reference",
+            "references": [{"type": ref_type, "value": value} for ref_type, value in references],
+        }
     return None, "needs_review", {"candidates": {}, "reason": "no_references_found"}
 
 

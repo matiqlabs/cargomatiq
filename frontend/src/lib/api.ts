@@ -158,6 +158,12 @@ export type InboxItem = {
   id: number; sender: string | null; subject: string | null; received_at: string | null;
   status: string; resolution_status: string | null; resolution_reason: Record<string, unknown>;
   shipment_id: number | null; error_message: string | null;
+  match: {
+    decision: string | null; reason: string | null;
+    target: { id: number; job_code: string } | null;
+    candidates: { id: number; job_code: string; references: { type: string; value: string; strong?: boolean }[] }[];
+    extracted_references: { type: string; value: string }[];
+  };
   attachments: { id: number; filename: string; mime_type: string }[];
   documents: { id: number; filename: string; document_type: string }[];
 };
